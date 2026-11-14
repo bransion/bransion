@@ -1,9 +1,7 @@
-// =====================================================================
-// BRANSION — Sign-up route. Public.
-// Functionally identical to sign-in (same Google button); only the
-// marketing subtext differs (see AuthForm's COPY map).
-// =====================================================================
 import { AuthForm } from '@/components/auth/auth-form';
+
+// Allow this route to block — it reads searchParams (?next= / ?error=)
+export const instant = false;
 
 export const metadata = {
   title: 'Create account — Bransion',

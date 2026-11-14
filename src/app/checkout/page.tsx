@@ -12,6 +12,9 @@ import { CheckoutForm, type CheckoutItem } from '@/components/checkout/CheckoutF
 
 export const metadata = { title: 'Checkout — Bransion' };
 
+// Allow this route to block — it reads searchParams (?next= / ?error=)
+export const instant = false;
+
 interface PageProps {
   searchParams: Promise<{ product?: string; size?: string }>;
 }

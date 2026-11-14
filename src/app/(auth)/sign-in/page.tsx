@@ -1,8 +1,7 @@
-// =====================================================================
-// BRANSION — Sign-in route. Public.
-// URL: /sign-in (route group "(auth)" is invisible in the URL).
-// =====================================================================
 import { AuthForm } from '@/components/auth/auth-form';
+
+// Allow this route to block — it reads searchParams (?next= / ?error=)
+export const instant = false;
 
 export const metadata = {
   title: 'Sign in — Bransion',
