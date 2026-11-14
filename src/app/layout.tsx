@@ -2,10 +2,11 @@ import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import './globals.css';
 import { ThemeProvider } from '@/components/layout/ThemeProvider';
-import { WhatsAppWidget } from '@/components/layout/WhatsAppWidget';
 import { Toaster } from 'sonner';
 
-// Body + headings both use Inter — refined via CSS tracking/weights below.
+// Allow this layout to block (prevents Next.js 16 prerender crash in ThemeProvider)
+export const instant = false;
+
 const sans = Inter({
   variable: '--font-sans',
   subsets: ['latin'],
@@ -40,7 +41,6 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {children}
-          <WhatsAppWidget />
           <Toaster richColors position="top-right" />
         </ThemeProvider>
       </body>
