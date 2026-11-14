@@ -1,28 +1,28 @@
-import type { Metadata } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
-import './globals.css';
-import { ThemeProvider } from '@/components/layout/ThemeProvider';
-import { Toaster } from 'sonner';
+import type { Metadata } from "next";
+import { Inter, JetBrains_Mono } from "next/font/google";
+import "./globals.css";
+import { ThemeProvider } from "@/components/layout/ThemeProvider";
+import { Toaster } from "sonner";
 
-// Allow this layout to block (prevents Next.js 16 prerender crash in ThemeProvider)
+// Prevents Next.js 16 from blocking the build on ThemeProvider prerender
 export const instant = false;
 
 const sans = Inter({
-  variable: '--font-sans',
-  subsets: ['latin'],
-  display: 'swap',
+  variable: "--font-sans",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 const mono = JetBrains_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-  display: 'swap',
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: 'Bransion — Print-on-Demand Commerce',
+  title: "Bransion — Print-on-Demand Commerce",
   description:
-    'Buy custom apparel from independent Nigerian creators. Or create your own brand.',
+    "Buy custom apparel from independent Nigerian creators. Or create your own brand.",
   robots: { index: false, follow: false },
 };
 
