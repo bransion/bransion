@@ -1,0 +1,71 @@
+# =====================================================================
+# BRANSION — .gitignore
+# NEVER remove any line under "Secrets". These files must never reach
+# GitHub — they contain keys that give full access to your database and
+# payment processor.
+# =====================================================================
+
+# ── Secrets (NEVER commit) ───────────────────────────────────────────
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+*.pem
+*.key
+
+# ── Dependencies ─────────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# ── Next.js build output ─────────────────────────────────────────────
+.next/
+out/
+build/
+dist/
+.swc/
+*.tsbuildinfo
+next-env.d.ts
+
+# ── Testing ──────────────────────────────────────────────────────────
+coverage/
+.nyc_output/
+
+# ── Vercel ───────────────────────────────────────────────────────────
+.vercel/
+
+# ── Supabase local ───────────────────────────────────────────────────
+supabase/.branches
+supabase/.temp
+supabase/.env
+
+# ── Logs ─────────────────────────────────────────────────────────────
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-debug.log*
+
+# ── OS / editor junk ─────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+
+# ── Misc ─────────────────────────────────────────────────────────────
+.vercelignore
+*.tgz
+.eslintcache
