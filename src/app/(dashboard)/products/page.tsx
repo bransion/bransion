@@ -9,8 +9,6 @@ import {
   type ProductRowData,
 } from "@/components/products/ProductRow";
 
-// Allow this route to block (fetch data at request time)
-export const instant = false;
 
 export default async function ProductsPage() {
   await connection();

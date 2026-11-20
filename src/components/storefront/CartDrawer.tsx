@@ -1,22 +1,18 @@
-// =====================================================================
-// BRANSION — Slide-over cart drawer.
-// Opens from the header cart icon. Shows quantity controls, per-line
-// price, subtotal. "Proceed to Checkout" navigates to /checkout.
-// =====================================================================
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { Minus, Plus, Trash2, ShoppingBag } from 'lucide-react';
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import { Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetDescription,
-} from '@/components/ui/sheet';
-import { Button } from '@/components/ui/button';
-import { formatNaira } from '@/lib/utils';
-import { useCart, cartSubtotal } from '@/lib/store/cart';
+} from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { formatNaira } from "@/lib/utils";
+import { useCart, cartSubtotal } from "@/lib/store/cart";
 
 interface Props {
   open: boolean;
@@ -30,27 +26,25 @@ export function CartDrawer({ open, onOpenChange }: Props) {
 
   function proceed() {
     onOpenChange(false);
-    router.push('/checkout');
+    router.push("/checkout");
   }
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-md flex flex-col p-0">
-        {/* Header */}
         <div className="px-6 py-4 border-b">
           <SheetHeader>
             <SheetTitle>Your cart</SheetTitle>
             <SheetDescription>
               {items.length === 0
-                ? 'Your cart is empty'
-                : `${items.length} item${items.length > 1 ? 's' : ''}`}
+                ? "Your cart is empty"
+                : `${items.length} item${items.length > 1 ? "s" : ""}`}
             </SheetDescription>
           </SheetHeader>
         </div>
 
-        {/* Body */}
         <div className="flex-1 overflow-y-auto px-6 py-4">
-         {items.length === 0 ? (
+          {items.length === 0 ? (
             <div className="py-16 text-center">
               <div className="mx-auto h-14 w-14 rounded-full bg-muted flex items-center justify-center mb-4">
                 <ShoppingBag className="h-7 w-7 text-muted-foreground" />
@@ -64,7 +58,7 @@ export function CartDrawer({ open, onOpenChange }: Props) {
                 className="mt-6"
                 onClick={() => {
                   onOpenChange(false);
-                  router.push('/store');
+                  router.push("/store");
                 }}
               >
                 Browse the store
@@ -77,13 +71,14 @@ export function CartDrawer({ open, onOpenChange }: Props) {
                   key={`${item.productId}-${item.size}`}
                   className="flex gap-3"
                 >
-                  <div className="h-20 w-20 flex-shrink-0 rounded-md overflow-hidden bg-muted">
+                  <div className="h-20 w-20 flex-shrink-0 rounded-md overflow-hidden bg-muted relative">
                     {item.imageUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={item.imageUrl}
                         alt={item.name}
-                        className="h-full w-full object-cover"
+                        fill
+                        sizes="80px"
+                        className="object-cover"
                       />
                     )}
                   </div>
@@ -146,7 +141,6 @@ export function CartDrawer({ open, onOpenChange }: Props) {
           )}
         </div>
 
-        {/* Footer */}
         {items.length > 0 && (
           <div className="border-t px-6 py-4 space-y-3">
             <div className="flex justify-between text-sm">

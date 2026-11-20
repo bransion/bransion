@@ -10,8 +10,6 @@ import { DashboardNav } from '@/components/dashboard/DashboardNav';
 import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner';
 import { cookies } from 'next/headers';
 
-// Allow this route to block (fetch data at request time)
-export const instant = false;
 
 export default async function DashboardLayout({
   children,

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { DeleteConfirmDialog } from "@/components/shared/DeleteConfirmDialog";
 import { deleteProduct } from "@/app/actions/creator-deletion";
 import { formatNaira } from "@/lib/utils";
+import Image from "next/image";
 
 export interface ProductRowData {
   id: string;
@@ -69,13 +70,14 @@ export function ProductRow({ product }: Props) {
         {/* Product */}
         <td className="py-3 px-4">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="h-12 w-12 rounded bg-muted overflow-hidden flex-shrink-0">
+            <div className="h-12 w-12 rounded bg-muted overflow-hidden flex-shrink-0 relative">
               {product.design_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
+                <Image
                   src={product.design_url}
                   alt={product.name}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="48px"
+                  className="object-cover"
                 />
               ) : null}
             </div>

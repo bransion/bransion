@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "tw-animate-css";
+@import "./tw-animate.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -49,58 +49,58 @@
 
 /* ── LIGHT MODE ─────────────────────────────────────────────────────── */
 :root {
-  --background: #FAFAFA;
-  --foreground: #0B0B0F;
-  --card: #FFFFFF;
-  --card-foreground: #0B0B0F;
-  --card-elevated: #FFFFFF;
-  --popover: #FFFFFF;
-  --popover-foreground: #0B0B0F;
-  --primary: #0B0B0F;
-  --primary-foreground: #FFFFFF;
-  --secondary: #F4F4F6;
-  --secondary-foreground: #0B0B0F;
-  --muted: #F4F4F6;
-  --muted-foreground: #6B6B75;
-  --accent: #F4F4F6;
-  --accent-foreground: #0B0B0F;
-  --destructive: #DC2626;
-  --border: #E5E5EA;
-  --input: #E5E5EA;
-  --ring: #0B0B0F;
+  --background: #fafafa;
+  --foreground: #0b0b0f;
+  --card: #ffffff;
+  --card-foreground: #0b0b0f;
+  --card-elevated: #ffffff;
+  --popover: #ffffff;
+  --popover-foreground: #0b0b0f;
+  --primary: #0b0b0f;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f6;
+  --secondary-foreground: #0b0b0f;
+  --muted: #f4f4f6;
+  --muted-foreground: #6b6b75;
+  --accent: #f4f4f6;
+  --accent-foreground: #0b0b0f;
+  --destructive: #dc2626;
+  --border: #e5e5ea;
+  --input: #e5e5ea;
+  --ring: #0b0b0f;
 
-  --brand: #0B0B0F;
-  --brand-foreground: #FFFFFF;
-  --brand-soft: #F4F4F6;
+  --brand: #0b0b0f;
+  --brand-foreground: #ffffff;
+  --brand-soft: #f4f4f6;
 
   --radius: 0.75rem;
 }
 
 /* ── DARK MODE (SOFT — never pitch black) ────────────────────────────── */
 .dark {
-  --background: #0B0B0F;
-  --foreground: #E5E5EA;
-  --card: #15151C;
-  --card-foreground: #E5E5EA;
-  --card-elevated: #1C1C24;
-  --popover: #1C1C24;
-  --popover-foreground: #E5E5EA;
-  --primary: #E5E5EA;
-  --primary-foreground: #0B0B0F;
-  --secondary: #1C1C24;
-  --secondary-foreground: #E5E5EA;
-  --muted: #1C1C24;
-  --muted-foreground: #A0A0A8;
-  --accent: #1C1C24;
-  --accent-foreground: #E5E5EA;
-  --destructive: #EF4444;
-  --border: #26262F;
-  --input: #26262F;
-  --ring: #E5E5EA;
+  --background: #0b0b0f;
+  --foreground: #e5e5ea;
+  --card: #15151c;
+  --card-foreground: #e5e5ea;
+  --card-elevated: #1c1c24;
+  --popover: #1c1c24;
+  --popover-foreground: #e5e5ea;
+  --primary: #e5e5ea;
+  --primary-foreground: #0b0b0f;
+  --secondary: #1c1c24;
+  --secondary-foreground: #e5e5ea;
+  --muted: #1c1c24;
+  --muted-foreground: #a0a0a8;
+  --accent: #1c1c24;
+  --accent-foreground: #e5e5ea;
+  --destructive: #ef4444;
+  --border: #26262f;
+  --input: #26262f;
+  --ring: #e5e5ea;
 
-  --brand: #0B0B0F;
-  --brand-foreground: #E5E5EA;
-  --brand-soft: #1C1C24;
+  --brand: #0b0b0f;
+  --brand-foreground: #e5e5ea;
+  --brand-soft: #1c1c24;
 }
 
 /* ── BASE STYLES — professional typography ───────────────────────────── */
@@ -123,14 +123,21 @@
   }
 
   /* Headings: same font, but tuned to feel like a display face */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
     letter-spacing: -0.025em;
     font-weight: 700;
     line-height: 1.15;
   }
 
-  h1, h2, h3 {
+  h1,
+  h2,
+  h3 {
     text-wrap: balance;
   }
 

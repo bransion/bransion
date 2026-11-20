@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { formatNaira } from "@/lib/utils";
+import Image from 'next/image';
 import { NIGERIA_STATES } from "@/lib/nigeria-lga-complete";
 import { quoteDeliveryFee } from "@/app/actions/admin-logistics";
 import { useCart, cartSubtotal, type CartLine } from "@/lib/store/cart";
@@ -359,13 +360,14 @@ export function CheckoutForm({
                   key={`${i.productId}-${i.size}`}
                   className="flex gap-3 text-sm"
                 >
-                  <div className="h-14 w-14 rounded overflow-hidden bg-muted flex-shrink-0">
+                  <div className="h-14 w-14 rounded overflow-hidden bg-muted flex-shrink-0 relative">
                     {i.imageUrl && (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <Image
                         src={i.imageUrl}
                         alt={i.name}
-                        className="h-full w-full object-cover"
+                        fill
+                        sizes="56px"
+                        className="object-cover"
                       />
                     )}
                   </div>

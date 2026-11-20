@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Download, CheckCircle2, Maximize2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { formatNaira } from '@/lib/utils';
+import Image from 'next/image';
 import { SynthesisReviewModal } from './SynthesisReviewModal';
 import {
   Dialog,
@@ -40,10 +41,12 @@ export function SynthesisCard({ product }: { product: any }) {
                 onClick={() => setImagePreview(stylePreviewUrl)}
                 className="h-14 w-14 rounded-md overflow-hidden bg-muted flex-shrink-0 border relative group"
               >
-                <img
+                <Image
                   src={stylePreviewUrl}
                   alt={styleTitle}
-                  className="h-full w-full object-cover"
+                  fill
+                  sizes="56px"
+                  className="object-cover"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src =
                       'https://placehold.co/100x100/0B0B0F/E5E5EA?text=No+Preview';
