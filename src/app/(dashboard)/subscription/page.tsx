@@ -18,8 +18,6 @@ interface PageProps {
   }>;
 }
 
-// Allow this route to block — it reads searchParams (?next= / ?error=)
-export const instant = false;
 
 const TIER_RANK: Record<string, number> = {
   none: 0,

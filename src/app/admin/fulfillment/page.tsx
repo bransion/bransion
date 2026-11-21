@@ -3,9 +3,6 @@ import { getPendingV3Products } from "@/app/actions/admin-synthesis";
 import { SynthesisCard } from "@/components/admin/SynthesisCard";
 import { Package } from "lucide-react";
 
-// Allow this route to block (fetch data at request time)
-export const instant = false;
-
 export default async function AdminFulfillmentPage() {
   await connection();
 

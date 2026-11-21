@@ -19,9 +19,6 @@ interface PageProps {
   searchParams: Promise<{ reference?: string; trxref?: string }>;
 }
 
-// Allow this route to block — it reads searchParams (?next= / ?error=)
-export const instant = false;
-
 export default async function SuccessPage({ searchParams }: PageProps) {
   const { reference } = await searchParams;
   if (!reference) redirect('/store');
