@@ -10,6 +10,8 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { ShoppingBag } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { Loader2, ImageIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
@@ -143,11 +145,20 @@ export default function NewBrandPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Create a Brand</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Set up your brand identity. You can edit these details anytime.
-        </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Create a Brand</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Set up your brand identity. You can edit these details anytime.
+          </p>
+        </div>
+        <Link
+          href="/store"
+          className="inline-flex items-center gap-1.5 rounded-md border bg-background px-3 py-1.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors whitespace-nowrap self-start"
+        >
+          <ShoppingBag className="h-3.5 w-3.5" />
+          Just browsing? Go to store
+        </Link>
       </div>
 
       <form

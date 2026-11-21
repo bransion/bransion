@@ -1,15 +1,22 @@
-// =====================================================================
-// BRANSION — Top navigation bar.
-// Cart button opens the CartDrawer; count comes from Zustand (live).
-// All navigation via useRouter().push() (this project's shadcn Button
-// does not support asChild).
-// =====================================================================
 'use client';
 
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ShoppingCart } from 'lucide-react';
+import {
+  ShoppingCart,
+  Menu,
+  X,
+  Store,
+  Truck,
+  LayoutDashboard,
+  Wallet,
+  Share2,
+  ShieldCheck,
+  LogOut,
+  ShoppingBag,
+  Trash2,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
@@ -20,8 +27,15 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
 import { ThemeToggle } from './ThemeToggle';
 import { CartDrawer } from '@/components/storefront/CartDrawer';
+import { DeleteAccountDialog } from '@/components/shared/DeleteAccountDialog';
 import { NotificationBell } from './NotificationBell';
 import { useCart, cartCount } from '@/lib/store/cart';
 
@@ -39,6 +53,9 @@ interface HeaderProps {
 export function Header({ user }: HeaderProps) {
   const router = useRouter();
   const [cartOpen, setCartOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+
   const items = useCart((s) => s.items);
   const count = cartCount(items);
 
@@ -49,23 +66,36 @@ export function Header({ user }: HeaderProps) {
     try {
       await fetch('/auth/signout', { method: 'POST', redirect: 'manual' });
     } catch {
-      // Ignore — we force-navigate regardless.
+      // Ignore — force navigate anyway
     }
     window.location.href = '/sign-in';
+  }
+
+  function closeMobileMenu() {
+    setMobileMenuOpen(false);
   }
 
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/80 backdrop-blur-md">
       <div className="container mx-auto flex h-16 items-center justify-between gap-4 px-4">
-        {/* ── Logo ────────────────────────────────────────────── */}
-        <Link
-          href="/store"
-          className="font-heading text-xl font-extrabold tracking-[-0.03em]"
-        >
-          BRANSION
-        </Link>
+        {/* ── LEFT: Hamburger (mobile) + Logo ────────────────── */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Open menu"
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
 
-        {/* ── Center nav ───────────────────────────────────────── */}
+          <Link href="/store" className="text-xl font-bold tracking-tight">
+            BRANSION
+          </Link>
+        </div>
+
+        {/* ── CENTER: Desktop nav ─────────────────────────────── */}
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
           <Link href="/store" className="hover:text-foreground transition-colors">
             Shop
@@ -78,10 +108,8 @@ export function Header({ user }: HeaderProps) {
           </Link>
         </nav>
 
-        {/* ── Right cluster ─────────────────────────────────────── */}
+        {/* ── RIGHT: Actions ──────────────────────────────────── */}
         <div className="flex items-center gap-2">
-                    {/* Per PROMPT PART 7: 135° obsidian gradient.
-              Light mode → obsidian→#2A2A3A. Dark mode → white→gray for visibility. */}
           <Button
             size="sm"
             onClick={() => router.push('/brands/new')}
@@ -89,6 +117,8 @@ export function Header({ user }: HeaderProps) {
           >
             Create a Brand
           </Button>
+
+          <NotificationBell />
 
           <Button
             variant="ghost"
@@ -105,16 +135,13 @@ export function Header({ user }: HeaderProps) {
             )}
           </Button>
 
-          <NotificationBell />
-          <ThemeToggle />
-          
+          <div className="hidden md:block">
+            <ThemeToggle />
+          </div>
 
           {user && (
             <DropdownMenu>
-              <DropdownMenuTrigger
-                className="rounded-full outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                aria-label="Account menu"
-              >
+              <DropdownMenuTrigger className="hidden md:block rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
                 <Avatar className="h-9 w-9">
                   {user.avatar_url && (
                     <AvatarImage src={user.avatar_url} alt={displayName} />
@@ -132,7 +159,6 @@ export function Header({ user }: HeaderProps) {
                     {user.email}
                   </span>
                 </DropdownMenuLabel>
-
                 <DropdownMenuSeparator />
 
                 <DropdownMenuItem
@@ -153,7 +179,7 @@ export function Header({ user }: HeaderProps) {
                   onClick={() => router.push('/referrals')}
                   className="cursor-pointer"
                 >
-                  Refer &amp; Earn
+                  Refer & Earn
                 </DropdownMenuItem>
 
                 {user.role === 'admin' && (
@@ -169,9 +195,17 @@ export function Header({ user }: HeaderProps) {
 
                 <DropdownMenuItem
                   onClick={handleSignOut}
-                  className="cursor-pointer text-destructive focus:text-destructive"
+                  className="cursor-pointer"
                 >
                   Sign out
+                </DropdownMenuItem>
+
+                <DropdownMenuItem
+                  onClick={() => setDeleteOpen(true)}
+                  className="cursor-pointer text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete Account
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -179,7 +213,190 @@ export function Header({ user }: HeaderProps) {
         </div>
       </div>
 
+      {/* ── MOBILE DRAWER ─────────────────────────────────────── */}
+      <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+        <SheetContent
+          side="left"
+          className="w-[85vw] max-w-sm p-0 flex flex-col"
+        >
+          <SheetHeader className="border-b p-4">
+            <div className="flex items-center justify-between">
+              <SheetTitle className="text-base font-bold tracking-tight">
+                BRANSION
+              </SheetTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={closeMobileMenu}
+                aria-label="Close menu"
+              >
+                <X className="h-5 w-5" />
+              </Button>
+            </div>
+          </SheetHeader>
+
+          <div className="flex-1 overflow-y-auto">
+            {/* Create a Brand CTA */}
+            <div className="p-4 border-b">
+              <Link
+                href="/brands/new"
+                onClick={closeMobileMenu}
+                className="flex items-center justify-center rounded-lg bg-gradient-to-br from-[#0B0B0F] to-[#2A2A3A] text-white dark:from-white dark:to-gray-300 dark:text-[#0B0B0F] px-4 py-3 text-sm font-semibold shadow-sm"
+              >
+                Create a Brand
+              </Link>
+            </div>
+
+            {/* Store navigation */}
+            <div className="border-b py-2">
+              <div className="px-5 py-2 text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">
+                Shop
+              </div>
+              <nav className="px-2">
+                <Link
+                  href="/store"
+                  onClick={closeMobileMenu}
+                  className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+                >
+                  <ShoppingBag className="h-4 w-4 flex-shrink-0" />
+                  <span className="flex-1">Shop</span>
+                </Link>
+                <Link
+                  href="/creators"
+                  onClick={closeMobileMenu}
+                  className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+                >
+                  <Store className="h-4 w-4 flex-shrink-0" />
+                  <span className="flex-1">Creators</span>
+                </Link>
+                <Link
+                  href="/track"
+                  onClick={closeMobileMenu}
+                  className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+                >
+                  <Truck className="h-4 w-4 flex-shrink-0" />
+                  <span className="flex-1">Track Order</span>
+                </Link>
+              </nav>
+            </div>
+
+            {/* If logged in — creator nav */}
+            {user && (
+              <div className="border-b py-2">
+                <div className="px-5 py-2 text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">
+                  My Account
+                </div>
+                <nav className="px-2">
+                  <Link
+                    href="/dashboard"
+                    onClick={closeMobileMenu}
+                    className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+                  >
+                    <LayoutDashboard className="h-4 w-4 flex-shrink-0" />
+                    <span className="flex-1">Dashboard</span>
+                  </Link>
+                  <Link
+                    href="/wallet"
+                    onClick={closeMobileMenu}
+                    className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+                  >
+                    <Wallet className="h-4 w-4 flex-shrink-0" />
+                    <span className="flex-1">Wallet</span>
+                  </Link>
+                  <Link
+                    href="/referrals"
+                    onClick={closeMobileMenu}
+                    className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+                  >
+                    <Share2 className="h-4 w-4 flex-shrink-0" />
+                    <span className="flex-1">Refer & Earn</span>
+                  </Link>
+                  {user.role === 'admin' && (
+                    <Link
+                      href="/admin"
+                      onClick={closeMobileMenu}
+                      className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-amber-600 dark:text-amber-400 hover:bg-muted"
+                    >
+                      <ShieldCheck className="h-4 w-4 flex-shrink-0" />
+                      <span className="flex-1">Admin Panel</span>
+                    </Link>
+                  )}
+                </nav>
+              </div>
+            )}
+          </div>
+
+          {/* Footer — user info + sign out */}
+          <div className="border-t p-3 space-y-2 bg-muted/30">
+            {user ? (
+              <>
+                <div className="flex items-center gap-3 px-1">
+                  <Avatar className="h-10 w-10">
+                    {user.avatar_url && (
+                      <AvatarImage src={user.avatar_url} alt={displayName} />
+                    )}
+                    <AvatarFallback>{initials}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <div className="truncate text-sm font-medium">
+                      {displayName}
+                    </div>
+                    <div className="truncate text-xs text-muted-foreground">
+                      {user.email}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 px-1">
+                  <span className="text-xs text-muted-foreground">Theme</span>
+                  <ThemeToggle />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMobileMenu();
+                    handleSignOut();
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    closeMobileMenu();
+                    setDeleteOpen(true);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-destructive hover:bg-destructive/10"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Account
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/sign-in"
+                onClick={closeMobileMenu}
+                className="block rounded-md bg-[#0B0B0F] text-white dark:bg-white dark:text-[#0B0B0F] px-4 py-2.5 text-sm font-semibold text-center"
+              >
+                Sign in
+              </Link>
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
+
       <CartDrawer open={cartOpen} onOpenChange={setCartOpen} />
+
+      {user && (
+        <DeleteAccountDialog
+          open={deleteOpen}
+          onOpenChange={setDeleteOpen}
+          userEmail={user.email}
+        />
+      )}
     </header>
   );
 }
