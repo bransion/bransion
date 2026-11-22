@@ -36,6 +36,7 @@ import {
 import { ThemeToggle } from './ThemeToggle';
 import { CartDrawer } from '@/components/storefront/CartDrawer';
 import { DeleteAccountDialog } from '@/components/shared/DeleteAccountDialog';
+import { SignOutDialog } from '@/components/shared/SignOutDialog'; // Added import
 import { NotificationBell } from './NotificationBell';
 import { useCart, cartCount } from '@/lib/store/cart';
 
@@ -55,21 +56,13 @@ export function Header({ user }: HeaderProps) {
   const [cartOpen, setCartOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
 
   const items = useCart((s) => s.items);
   const count = cartCount(items);
 
   const displayName = user?.full_name ?? user?.email ?? 'Account';
   const initials = displayName.slice(0, 2).toUpperCase();
-
-  async function handleSignOut() {
-    try {
-      await fetch('/auth/signout', { method: 'POST', redirect: 'manual' });
-    } catch {
-      // Ignore — force navigate anyway
-    }
-    window.location.href = '/sign-in';
-  }
 
   function closeMobileMenu() {
     setMobileMenuOpen(false);
@@ -193,8 +186,9 @@ export function Header({ user }: HeaderProps) {
 
                 <DropdownMenuSeparator />
 
+                {/* Desktop Sign Out - Opens Modal */}
                 <DropdownMenuItem
-                  onClick={handleSignOut}
+                  onClick={() => setSignOutOpen(true)}
                   className="cursor-pointer"
                 >
                   Sign out
@@ -352,11 +346,12 @@ export function Header({ user }: HeaderProps) {
                   <ThemeToggle />
                 </div>
 
+                {/* Mobile Sign Out - Opens Modal */}
                 <button
                   type="button"
                   onClick={() => {
                     closeMobileMenu();
-                    handleSignOut();
+                    setSignOutOpen(true);
                   }}
                   className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
                 >
@@ -391,11 +386,15 @@ export function Header({ user }: HeaderProps) {
       <CartDrawer open={cartOpen} onOpenChange={setCartOpen} />
 
       {user && (
-        <DeleteAccountDialog
-          open={deleteOpen}
-          onOpenChange={setDeleteOpen}
-          userEmail={user.email}
-        />
+        <>
+          <DeleteAccountDialog
+            open={deleteOpen}
+            onOpenChange={setDeleteOpen}
+            userEmail={user.email}
+          />
+          {/* Sign Out Modal added here */}
+          <SignOutDialog open={signOutOpen} onOpenChange={setSignOutOpen} />
+        </>
       )}
     </header>
   );

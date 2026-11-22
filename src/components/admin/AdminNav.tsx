@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/sheet';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { DeleteAccountDialog } from '@/components/shared/DeleteAccountDialog';
+import { SignOutDialog } from '@/components/shared/SignOutDialog'; // Added
 import { cn } from '@/lib/utils';
 
 type NavItem = {
@@ -96,19 +97,11 @@ export function AdminNav({ user }: Props) {
   const initials = displayName.slice(0, 2).toUpperCase();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false); // Added
 
   function isActive(href: string) {
     if (href === '/admin') return pathname === '/admin';
     return pathname === href || pathname.startsWith(`${href}/`);
-  }
-
-  async function handleSignOut() {
-    try {
-      await fetch('/auth/signout', { method: 'POST', redirect: 'manual' });
-    } catch {
-      // Ignore — force navigate anyway
-    }
-    window.location.href = '/sign-in';
   }
 
   function closeDrawer() {
@@ -183,7 +176,7 @@ export function AdminNav({ user }: Props) {
 
           <button
             type="button"
-            onClick={handleSignOut}
+            onClick={() => setSignOutOpen(true)} // Changed to open modal
             className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
           >
             <LogOut className="h-3 w-3" />
@@ -335,7 +328,7 @@ export function AdminNav({ user }: Props) {
               type="button"
               onClick={() => {
                 closeDrawer();
-                handleSignOut();
+                setSignOutOpen(true); // Changed to open modal
               }}
               className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
             >
@@ -362,6 +355,9 @@ export function AdminNav({ user }: Props) {
         onOpenChange={setDeleteOpen}
         userEmail={user.email}
       />
+      
+      {/* Added SignOutDialog */}
+      <SignOutDialog open={signOutOpen} onOpenChange={setSignOutOpen} />
     </>
   );
 }

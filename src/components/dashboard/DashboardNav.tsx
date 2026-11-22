@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { DeleteAccountDialog } from '@/components/shared/DeleteAccountDialog';
+import { SignOutDialog } from '@/components/shared/SignOutDialog'; // Added
 import { cn } from '@/lib/utils';
 
 interface NavItem {
@@ -69,6 +70,7 @@ export function DashboardNav({ user }: Props) {
   const displayName = user.full_name ?? user.email;
   const initials = displayName.slice(0, 2).toUpperCase();
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false); // Added
 
   const navItems: NavItem[] = isAdmin
     ? [...BASE_NAV, { href: '/admin', label: 'Admin', icon: ShieldCheck }]
@@ -77,15 +79,6 @@ export function DashboardNav({ user }: Props) {
   function isActive(href: string) {
     if (href === '/dashboard') return pathname === '/dashboard';
     return pathname === href || pathname.startsWith(`${href}/`);
-  }
-
-  async function handleSignOut() {
-    try {
-      await fetch('/auth/signout', { method: 'POST', redirect: 'manual' });
-    } catch {
-      // Ignore — force navigate anyway
-    }
-    window.location.href = '/sign-in';
   }
 
   return (
@@ -149,7 +142,7 @@ export function DashboardNav({ user }: Props) {
 
           <button
             type="button"
-            onClick={handleSignOut}
+            onClick={() => setSignOutOpen(true)} // Changed to open modal
             className="flex w-full items-center gap-2 rounded-md px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
           >
             <LogOut className="h-3 w-3" />
@@ -224,7 +217,7 @@ export function DashboardNav({ user }: Props) {
               )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
-                onClick={handleSignOut}
+                onClick={() => setSignOutOpen(true)} // Changed to open modal
                 className="cursor-pointer"
               >
                 <LogOut className="mr-2 h-4 w-4" />
@@ -270,6 +263,9 @@ export function DashboardNav({ user }: Props) {
         onOpenChange={setDeleteOpen}
         userEmail={user.email}
       />
+      
+      {/* Added SignOutDialog */}
+      <SignOutDialog open={signOutOpen} onOpenChange={setSignOutOpen} />
     </>
   );
 }
