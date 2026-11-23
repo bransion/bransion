@@ -48,8 +48,6 @@ export function ProductCard({ product }: { product: any }) {
 
   const clothQuality = product.base_plain_apparel?.description;
   const descriptionText = product.description || 'No description provided.';
-  
-  // If description is longer than ~80 characters, we show the toggle
   const shouldTruncate = descriptionText.length > 80;
 
   function handleAddToCart() {
@@ -88,7 +86,7 @@ export function ProductCard({ product }: { product: any }) {
       </Link>
 
       <div className="p-4 flex flex-col gap-3 flex-1">
-        {/* Brand & Title */}
+        {/* BRAND NAME */}
         <div>
           <div className="text-xs text-muted-foreground uppercase tracking-wider truncate mb-1">
             {product.brands?.name ?? 'Bransion'}
@@ -101,7 +99,7 @@ export function ProductCard({ product }: { product: any }) {
           </Link>
         </div>
 
-        {/* Cloth Quality Badge */}
+        {/* CLOTH QUALITY BADGE */}
         {clothQuality && (
           <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md w-fit max-w-full">
             <Sparkles className="h-3.5 w-3.5 flex-shrink-0" />
@@ -109,7 +107,7 @@ export function ProductCard({ product }: { product: any }) {
           </div>
         )}
 
-        {/* Product Description with Read More toggle */}
+        {/* CREATOR DESCRIPTION with Read More */}
         <div className="text-xs text-muted-foreground leading-relaxed">
           <span
             className={cn(
@@ -118,12 +116,11 @@ export function ProductCard({ product }: { product: any }) {
           >
             {descriptionText}
           </span>
-          
           {shouldTruncate && (
             <button
               type="button"
               onClick={(e) => {
-                e.preventDefault(); // Prevents triggering parent Link if any
+                e.preventDefault();
                 setDescExpanded(!descExpanded);
               }}
               className="text-[11px] font-semibold text-foreground hover:underline mt-1 block focus:outline-none"
@@ -133,7 +130,7 @@ export function ProductCard({ product }: { product: any }) {
           )}
         </div>
 
-        {/* Size Selector */}
+        {/* SIZE SELECTOR */}
         {sizes.length > 0 && (
           <Select
             value={selectedSize}
@@ -155,12 +152,12 @@ export function ProductCard({ product }: { product: any }) {
           </Select>
         )}
 
-        {/* Price */}
+        {/* PRICE */}
         <div className="text-xl font-bold mt-auto pt-2">
           {formatNaira(displayPrice)}
         </div>
 
-        {/* Actions */}
+        {/* ACTIONS */}
         <div className="grid grid-cols-2 gap-2 mt-1">
           <Button variant="outline" size="sm" onClick={handleAddToCart}>
             <ShoppingBag className="mr-2 h-4 w-4" /> Add
@@ -171,7 +168,7 @@ export function ProductCard({ product }: { product: any }) {
         </div>
 
         <div className="pt-1">
-            <ShareButton
+          <ShareButton
             url={detailHref}
             title={product.name}
             className="w-full h-8 text-xs"
