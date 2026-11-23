@@ -1,19 +1,18 @@
 // =====================================================================
-// BRANSION — Payment success page.
-// Paystack redirects here with ?reference=XXX&trxref=XXX.
-// 1. Verify transaction server-side via Paystack /verify (backup for
-//    missed webhooks — idempotent because we check order.status first).
-// 2. Poll for the webhook to complete the wallet credit (up to 30s).
-// 3. Show confirmation + link back to dashboard / store.
+// BRANSION — Checkout success page (V3).
+// - Verifies payment via Paystack (backup if webhook missed).
+// - Credits creator wallet (via apply_maintenance_offset).
+// - Shows "Continue Shopping" and "Buy More" buttons.
 // =====================================================================
-import { createClient } from '@/lib/supabase/server';
-import { serviceRoleClient } from '@/lib/supabase/server';
+import { createClient, serviceRoleClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle2, Clock, XCircle } from 'lucide-react';
+import { CheckCircle2, Clock, XCircle, ShoppingBag, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { verifyTransaction } from '@/lib/paystack';
 import { formatNaira } from '@/lib/utils';
+import { calculatePricing } from '@/lib/pricing';
+import { PendingPaymentPoller } from '@/components/checkout/PendingPaymentPoller';
 
 interface PageProps {
   searchParams: Promise<{ reference?: string; trxref?: string }>;
@@ -23,7 +22,6 @@ export default async function SuccessPage({ searchParams }: PageProps) {
   const { reference } = await searchParams;
   if (!reference) redirect('/store');
 
-  // Ensure user is the buyer (defense in depth).
   const authClient = await createClient();
   const {
     data: { user },
@@ -37,11 +35,14 @@ export default async function SuccessPage({ searchParams }: PageProps) {
     redirect('/store');
   }
 
-  // ── Backup verification if webhook missed ─────────────────────────
+  // ── BACKUP VERIFY (Layer 4 — works on localhost) ─────────────────
   if (order && order.status === 'pending_payment') {
     try {
       const verify = await verifyTransaction(reference);
-      if (verify.status === 'success' && verify.amount >= order.total_amount * 100) {
+      if (
+        verify.status === 'success' &&
+        verify.amount >= order.total_amount * 100
+      ) {
         await admin
           .from('orders')
           .update({
@@ -51,7 +52,7 @@ export default async function SuccessPage({ searchParams }: PageProps) {
           .eq('id', order.id)
           .eq('status', 'pending_payment');
 
-        // Credit creators (mirror of webhook logic)
+        // Credit each creator in this order
         const { data: items } = await admin
           .from('order_items')
           .select(`markup, quantity, products(brands(creator_id))`)
@@ -67,14 +68,13 @@ export default async function SuccessPage({ searchParams }: PageProps) {
           const creatorId = item.products?.brands?.creator_id;
           if (!creatorId) continue;
           const totalMarkup = Number(item.markup) * Number(item.quantity);
-          const netCreatorProfit = totalMarkup * 0.7;
+          const { netCreatorProfit } = calculatePricing(0, totalMarkup);
           await admin.rpc('apply_maintenance_offset', {
             p_creator_id: creatorId,
             p_credit_amount: netCreatorProfit,
           });
         }
 
-        // Re-fetch to display the new status.
         order = await fetchOrder(reference);
       }
     } catch (err) {
@@ -104,9 +104,9 @@ export default async function SuccessPage({ searchParams }: PageProps) {
             <Clock className="mx-auto h-16 w-16 text-amber-500 animate-pulse" />
             <h1 className="text-2xl font-bold">Confirming payment…</h1>
             <p className="text-sm text-muted-foreground">
-              We&apos;re waiting for Paystack to confirm your payment. This
-              usually takes a few seconds. Refresh in a moment.
+              We&apos;re waiting for Paystack to confirm your payment.
             </p>
+            <PendingPaymentPoller reference={reference} />
           </>
         )}
 
@@ -135,21 +135,43 @@ export default async function SuccessPage({ searchParams }: PageProps) {
             </div>
             <div className="flex justify-between">
               <span className="text-muted-foreground">Status</span>
-              <span className="font-semibold capitalize">{order.status.replace('_', ' ')}</span>
+              <span className="font-semibold capitalize">
+                {order.status.replace('_', ' ')}
+              </span>
             </div>
           </div>
         )}
 
-        <div className="flex flex-col gap-2 pt-2">
-          <Link href="/dashboard">
-            <Button className="w-full">Go to Dashboard</Button>
-          </Link>
-          <Link href="/store">
-            <Button variant="outline" className="w-full">
-              Continue Shopping
-            </Button>
-          </Link>
-        </div>
+        {/* TWO BUTTONS: Continue Shopping + Buy More */}
+        {paid && (
+          <div className="flex flex-col gap-2 pt-2">
+            <Link href="/store">
+              <Button className="w-full">
+                <ShoppingBag className="mr-2 h-4 w-4" />
+                Continue Shopping
+              </Button>
+            </Link>
+            <Link href="/checkout">
+              <Button variant="outline" className="w-full">
+                <RotateCcw className="mr-2 h-4 w-4" />
+                Buy More
+              </Button>
+            </Link>
+          </div>
+        )}
+
+        {!paid && !pending && (
+          <div className="flex flex-col gap-2 pt-2">
+            <Link href="/dashboard">
+              <Button className="w-full">Go to Dashboard</Button>
+            </Link>
+            <Link href="/store">
+              <Button variant="outline" className="w-full">
+                Back to Store
+              </Button>
+            </Link>
+          </div>
+        )}
 
         <p className="text-[11px] text-muted-foreground">
           Need help? Message us on WhatsApp with your reference.
@@ -159,7 +181,6 @@ export default async function SuccessPage({ searchParams }: PageProps) {
   );
 }
 
-// ── Helper: fetch order row ─────────────────────────────────────────
 async function fetchOrder(reference: string) {
   const admin = serviceRoleClient();
   const { data } = await admin

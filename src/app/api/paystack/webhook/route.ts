@@ -140,13 +140,22 @@ async function handleOrderWebhook(
     products: { brands: { creator_id: string } | null } | null;
   };
 
-  // ── Credit creator wallets (existing logic — 70% of markup) ──────
+  // ── Aggregate markup by creator first (handles multi-item orders) ─
+  const markupByCreator = new Map<string, number>();
   for (const item of (orderItems ?? []) as unknown as OI[]) {
     const creatorId = item.products?.brands?.creator_id;
     if (!creatorId) continue;
-
     const totalMarkup = Number(item.markup) * Number(item.quantity);
-    const { netCreatorProfit } = calculatePricing(0, totalMarkup);
+    markupByCreator.set(
+      creatorId,
+      (markupByCreator.get(creatorId) ?? 0) + totalMarkup
+    );
+  }
+
+  // ── Single loop per creator: credit 70% + referral commission ────
+  for (const [creatorId, markupTotal] of markupByCreator.entries()) {
+    // ── 1) Credit creator wallet (70% of markup) ───────────────────
+    const { netCreatorProfit } = calculatePricing(0, markupTotal);
 
     const { error: rpcErr } = await admin.rpc('apply_maintenance_offset', {
       p_creator_id: creatorId,
@@ -159,10 +168,70 @@ async function handleOrderWebhook(
         netCreatorProfit,
       });
     }
-  }
 
-  // ── NEW: Lifetime referral commissions (2%/5% of markup) ─────────
-  await creditLifetimeReferralCommissions(order.id, admin);
+    // ── 2) Lifetime referral commission (2%/5% of markup) ──────────
+    // Carved from Bransion's 30%. Creator's 70% is untouched.
+    // Basic referrers get 'none' split → no credit.
+    const { data: contract } = await admin
+      .from('referral_contracts')
+      .select('id, referrer_id, lifetime_split')
+      .eq('referee_id', creatorId)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (!contract) continue;
+    if (contract.lifetime_split === 'none') continue;
+
+    const commission = computeLifetimeSaleCommission(
+      markupTotal,
+      contract.lifetime_split
+    );
+    if (commission <= 0) continue;
+
+    const sourceFee = computeSourceFeeAmount(markupTotal);
+
+    const { data: referrer } = await admin
+      .from('profiles')
+      .select('wallet_balance, lifetime_earnings')
+      .eq('id', contract.referrer_id)
+      .maybeSingle();
+
+    const currentBalance = Number(referrer?.wallet_balance ?? 0);
+    const currentEarnings = Number(referrer?.lifetime_earnings ?? 0);
+    const newBalance = roundMoney(currentBalance + commission);
+    const newEarnings = roundMoney(currentEarnings + commission);
+
+    await admin
+      .from('profiles')
+      .update({
+        wallet_balance: newBalance,
+        lifetime_earnings: newEarnings,
+      })
+      .eq('id', contract.referrer_id);
+
+    await admin.from('wallet_transactions').insert({
+      creator_id: contract.referrer_id,
+      order_id: order.id,
+      type: 'sale_credit',
+      amount: commission,
+      balance_after: newBalance,
+      description: `Referral commission on order ${order.id.slice(0, 8)}`,
+      reference: `ref_order_${order.id}_${creatorId}`,
+    });
+
+    const pct = contract.lifetime_split === 'five_percent' ? 5 : 2;
+
+    await admin.from('commissions_ledger').insert({
+      referrer_id: contract.referrer_id,
+      referee_id: creatorId,
+      order_id: order.id,
+      type: 'lifetime_sale',
+      base_amount: markupTotal,
+      commission_pct: pct,
+      commission_amount: commission,
+      source_fee_amount: sourceFee,
+    });
+  }
 
   return NextResponse.json({ received: true, order_id: order.id });
 }
@@ -274,103 +343,10 @@ async function handleTierWebhook(
     }
   }
 
+  // Note: The 10% initial referral commission is handled by the DB
+  // trigger `lock_referral_contract` on subscription_payments.status='paid'.
+  // Basic referrers get 'none' split (0% lifetime), Standard get 2%,
+  // Premium get 5% — all set at contract lock time.
+
   return NextResponse.json({ received: true, tier });
-}
-
-// =====================================================================
-// LIFETIME REFERRAL COMMISSION
-// Per creator in the order: if they were referred (active contract),
-// credit their referrer 2%/5% of that creator's markup — carved from
-// Bransion's 30%. Creator's 70% split is untouched.
-// =====================================================================
-async function creditLifetimeReferralCommissions(
-  orderId: string,
-  admin: ReturnType<typeof serviceRoleClient>
-) {
-  const { data: items } = await admin
-    .from('order_items')
-    .select(
-      `id, markup, quantity,
-       products(brands(creator_id))`
-    )
-    .eq('order_id', orderId);
-
-  type OI = {
-    id: string;
-    markup: number;
-    quantity: number;
-    products: { brands: { creator_id: string } | null } | null;
-  };
-
-  // Group markup by creator
-  const markupByCreator = new Map<string, number>();
-  for (const item of (items ?? []) as unknown as OI[]) {
-    const cid = item.products?.brands?.creator_id;
-    if (!cid) continue;
-    const totalMarkup = Number(item.markup) * Number(item.quantity);
-    markupByCreator.set(cid, (markupByCreator.get(cid) ?? 0) + totalMarkup);
-  }
-
-  for (const [creatorId, markupTotal] of markupByCreator.entries()) {
-    // Look up active contract for this creator as referee
-    const { data: contract } = await admin
-      .from('referral_contracts')
-      .select('id, referrer_id, lifetime_split')
-      .eq('referee_id', creatorId)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (!contract) continue;
-    if (contract.lifetime_split === 'none') continue;
-
-    const commission = computeLifetimeSaleCommission(
-      markupTotal,
-      contract.lifetime_split
-    );
-    if (commission <= 0) continue;
-
-    const sourceFee = computeSourceFeeAmount(markupTotal);
-
-    const { data: referrer } = await admin
-      .from('profiles')
-      .select('wallet_balance, lifetime_earnings')
-      .eq('id', contract.referrer_id)
-      .maybeSingle();
-
-    const currentBalance = Number(referrer?.wallet_balance ?? 0);
-    const currentEarnings = Number(referrer?.lifetime_earnings ?? 0);
-    const newBalance = roundMoney(currentBalance + commission);
-    const newEarnings = roundMoney(currentEarnings + commission);
-
-    await admin
-      .from('profiles')
-      .update({
-        wallet_balance: newBalance,
-        lifetime_earnings: newEarnings,
-      })
-      .eq('id', contract.referrer_id);
-
-    await admin.from('wallet_transactions').insert({
-      creator_id: contract.referrer_id,
-      order_id: orderId,
-      type: 'sale_credit',
-      amount: commission,
-      balance_after: newBalance,
-      description: `Referral commission on order ${orderId.slice(0, 8)}`,
-      reference: `ref_order_${orderId}_${creatorId}`,
-    });
-
-    const pct = contract.lifetime_split === 'five_percent' ? 5 : 2;
-
-    await admin.from('commissions_ledger').insert({
-      referrer_id: contract.referrer_id,
-      referee_id: creatorId,
-      order_id: orderId,
-      type: 'lifetime_sale',
-      base_amount: markupTotal,
-      commission_pct: pct,
-      commission_amount: commission,
-      source_fee_amount: sourceFee,
-    });
-  }
 }
