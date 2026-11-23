@@ -163,8 +163,8 @@ export default async function BrandsPage() {
                     >
                       View storefront <ExternalLink className="h-3 w-3" />
                     </Link>
-                    <ShareButton
-                      url={`${process.env.NEXT_PUBLIC_SITE_URL || ''}/store/${brand.slug}`}
+                      <ShareButton
+                      url={`/store/${brand.slug}`}
                       title={`Check out ${brand.name} on Bransion!`}
                       variant="ghost"
                       size="icon"

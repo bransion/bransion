@@ -1,62 +1,75 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { ShoppingBag, Zap } from "lucide-react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { ShoppingBag, Zap, Sparkles } from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
-import { formatNaira } from "@/lib/utils";
-import { useCart } from "@/lib/store/cart";
-import { ShareButton } from "./ShareButton";
+} from '@/components/ui/select';
+import { formatNaira, cn } from '@/lib/utils';
+import { useCart } from '@/lib/store/cart';
+import { ShareButton } from './ShareButton';
 
 export function ProductCard({ product }: { product: any }) {
   const router = useRouter();
   const addToCart = useCart((s) => s.add);
 
-  const sizeModifiers: Record<string, number> = product.base_plain_apparel
-    ?.size_price_modifiers || { M: 0 };
+  const sizeModifiers: Record<string, number> =
+    product.base_plain_apparel?.size_price_modifiers || { M: 0 };
   const sizes = Object.keys(sizeModifiers);
   const [selectedSize, setSelectedSize] = useState(
-    sizes.includes("M") ? "M" : sizes[0] || "M",
+    sizes.includes('M') ? 'M' : sizes[0] || 'M'
   );
+  const [descExpanded, setDescExpanded] = useState(false);
 
   const baseCost = Number(product.base_plain_apparel?.default_base_cost || 0);
   const styleCost = Number(
-    product.sub_children_styles?.additional_cost_markup || 0,
+    product.sub_children_styles?.additional_cost_markup || 0
   );
   const markup = Number(product.user_profit_markup || 0);
   const sizeMod = Number(sizeModifiers[selectedSize] || 0);
 
   const displayPrice = baseCost + styleCost + markup + sizeMod;
-  const brandSlug = product.brands?.slug ?? "bransion";
+  const brandSlug = product.brands?.slug ?? 'bransion';
   const detailHref = `/store/${brandSlug}/product/${product.id}`;
 
   const imageUrl =
     product.final_composite_product_url ||
     product.base_plain_apparel?.main_image_url ||
-    "https://placehold.co/600x600/0B0B0F/E5E5EA?text=Product";
+    'https://placehold.co/600x600/0B0B0F/E5E5EA?text=Product';
+
+  const clothQuality = product.base_plain_apparel?.description;
+  const descriptionText = product.description || 'No description provided.';
+  
+  // If description is longer than ~80 characters, we show the toggle
+  const shouldTruncate = descriptionText.length > 80;
 
   function handleAddToCart() {
+    if (!selectedSize) return toast.error('Please select a size');
     addToCart({
       productId: product.id,
       size: selectedSize,
       name: product.name,
-      brandName: product.brands?.name ?? "Bransion",
+      brandName: product.brands?.name ?? 'Bransion',
       brandSlug,
       imageUrl,
       sizePrice: baseCost + styleCost + sizeMod,
       markup,
     });
-    toast.success("Added to cart");
+    toast.success('Added to cart');
+  }
+
+  function handleBuyNow() {
+    if (!selectedSize) return toast.error('Please select a size');
+    router.push(`/checkout?product=${product.id}&size=${selectedSize}`);
   }
 
   return (
@@ -75,32 +88,66 @@ export function ProductCard({ product }: { product: any }) {
       </Link>
 
       <div className="p-4 flex flex-col gap-3 flex-1">
+        {/* Brand & Title */}
         <div>
-          <div className="text-xs text-muted-foreground truncate">
-            {product.brands?.name ?? "Bransion"}
+          <div className="text-xs text-muted-foreground uppercase tracking-wider truncate mb-1">
+            {product.brands?.name ?? 'Bransion'}
           </div>
           <Link
             href={detailHref}
-            className="font-medium truncate block hover:underline"
+            className="font-semibold text-lg leading-tight line-clamp-1 hover:underline"
           >
             {product.name}
           </Link>
         </div>
 
+        {/* Cloth Quality Badge */}
+        {clothQuality && (
+          <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md w-fit max-w-full">
+            <Sparkles className="h-3.5 w-3.5 flex-shrink-0" />
+            <span className="truncate">{clothQuality}</span>
+          </div>
+        )}
+
+        {/* Product Description with Read More toggle */}
+        <div className="text-xs text-muted-foreground leading-relaxed">
+          <span
+            className={cn(
+              shouldTruncate && !descExpanded ? 'line-clamp-2' : 'block'
+            )}
+          >
+            {descriptionText}
+          </span>
+          
+          {shouldTruncate && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault(); // Prevents triggering parent Link if any
+                setDescExpanded(!descExpanded);
+              }}
+              className="text-[11px] font-semibold text-foreground hover:underline mt-1 block focus:outline-none"
+            >
+              {descExpanded ? 'Show less' : 'Read more'}
+            </button>
+          )}
+        </div>
+
+        {/* Size Selector */}
         {sizes.length > 0 && (
           <Select
             value={selectedSize}
             onValueChange={(v) => v && setSelectedSize(v)}
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full h-9 text-sm">
               <SelectValue placeholder="Size" />
             </SelectTrigger>
             <SelectContent>
               {sizes.map((s) => (
                 <SelectItem key={s} value={s}>
-                  {s} —{" "}
+                  {s} —{' '}
                   {formatNaira(
-                    baseCost + styleCost + markup + (sizeModifiers[s] || 0),
+                    baseCost + styleCost + markup + (sizeModifiers[s] || 0)
                   )}
                 </SelectItem>
               ))}
@@ -108,31 +155,26 @@ export function ProductCard({ product }: { product: any }) {
           </Select>
         )}
 
-        <div className="text-lg font-semibold mt-auto">
+        {/* Price */}
+        <div className="text-xl font-bold mt-auto pt-2">
           {formatNaira(displayPrice)}
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
+        {/* Actions */}
+        <div className="grid grid-cols-2 gap-2 mt-1">
           <Button variant="outline" size="sm" onClick={handleAddToCart}>
             <ShoppingBag className="mr-2 h-4 w-4" /> Add
           </Button>
-          <Button
-            size="sm"
-            onClick={() =>
-              router.push(
-                `/checkout?product=${product.id}&size=${selectedSize}`,
-              )
-            }
-          >
+          <Button size="sm" onClick={handleBuyNow}>
             <Zap className="mr-2 h-4 w-4" /> Buy
           </Button>
         </div>
 
-        <div className="mt-1">
-          <ShareButton
-            url={`${process.env.NEXT_PUBLIC_SITE_URL || ""}/store/${brandSlug}/product/${product.id}`}
+        <div className="pt-1">
+            <ShareButton
+            url={detailHref}
             title={product.name}
-            className="w-full"
+            className="w-full h-8 text-xs"
           />
         </div>
       </div>

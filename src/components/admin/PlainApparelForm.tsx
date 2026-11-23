@@ -178,14 +178,8 @@ export function PlainApparelForm({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Description (Prominent - Creators read this)</Label>
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={3}
-              placeholder="100% combed cotton, heavyweight..."
-              required
-            />
+            <Label>Cloth Quality & Description (Visible to Creators & Buyers)</Label>
+            <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder="e.g. 100% combed cotton, heavyweight 180g. Premium quality." required />
           </div>
 
           <div className="grid grid-cols-2 gap-4">

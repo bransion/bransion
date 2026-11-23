@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase/server';
 import { ProductCard } from '@/components/storefront/ProductCard';
+import { ShareButton } from '@/components/storefront/ShareButton';
 
 export default async function ProductDetailPage({
   params,
@@ -49,9 +50,21 @@ export default async function ProductDetailPage({
             <p className="text-sm text-muted-foreground">
               {product.brands?.name}
             </p>
-            <h1 className="text-3xl font-bold tracking-tight mt-1">
-              {product.name}
-            </h1>
+
+            {/* Title row with Share button */}
+            <div className="flex items-start justify-between gap-4 mt-1">
+              <h1 className="text-3xl font-bold tracking-tight flex-1">
+                {product.name}
+              </h1>
+              <ShareButton
+                url={`/store/${product.brands?.slug}/product/${product.id}`}
+                title={product.name}
+                variant="outline"
+                size="icon"
+                className="flex-shrink-0"
+              />
+            </div>
+
             {product.description && (
               <p className="mt-3 text-muted-foreground leading-relaxed">
                 {product.description}

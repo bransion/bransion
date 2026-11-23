@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Search, Check } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { formatNaira, cn } from "@/lib/utils";
+import { useState } from 'react';
+import { Search, Check, Sparkles } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { formatNaira, cn } from '@/lib/utils';
 
 interface Props {
   apparels: any[];
@@ -12,9 +12,9 @@ interface Props {
 }
 
 export function ApparelPicker({ apparels, selectedId, onSelect }: Props) {
-  const [q, setQ] = useState("");
+  const [q, setQ] = useState('');
   const filtered = apparels.filter((a) =>
-    a.name.toLowerCase().includes(q.toLowerCase()),
+    a.name.toLowerCase().includes(q.toLowerCase())
   );
 
   return (
@@ -22,7 +22,7 @@ export function ApparelPicker({ apparels, selectedId, onSelect }: Props) {
       <div>
         <h2 className="font-semibold text-lg">2. Choose Base Apparel</h2>
         <p className="text-xs text-muted-foreground mt-1">
-          Select the garment you want to print on.
+          Select the garment you want to print on. Review the quality before choosing.
         </p>
       </div>
 
@@ -50,10 +50,10 @@ export function ApparelPicker({ apparels, selectedId, onSelect }: Props) {
                 type="button"
                 onClick={() => onSelect(a)}
                 className={cn(
-                  "relative rounded-lg border bg-background p-3 text-left transition-all",
+                  'relative rounded-lg border bg-background p-3 text-left transition-all flex flex-col h-full',
                   selected
-                    ? "border-[#0B0B0F] dark:border-white ring-2 ring-[#0B0B0F]/20"
-                    : "hover:border-foreground/40",
+                    ? 'border-[#0B0B0F] dark:border-white ring-2 ring-[#0B0B0F]/20'
+                    : 'hover:border-foreground/40'
                 )}
               >
                 {selected && (
@@ -72,10 +72,19 @@ export function ApparelPicker({ apparels, selectedId, onSelect }: Props) {
                   {a.category}
                 </div>
                 <div className="font-medium text-sm truncate">{a.name}</div>
-                <div className="text-xs mt-1 font-semibold">
+                
+                {/* Cloth Quality shown to creator */}
+                {a.description && (
+                  <div className="mt-2 flex items-start gap-1 text-[10px] text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 p-1.5 rounded">
+                    <Sparkles className="h-3 w-3 flex-shrink-0 mt-0.5" />
+                    <span className="line-clamp-2">{a.description}</span>
+                  </div>
+                )}
+
+                <div className="text-xs mt-2 font-semibold">
                   {formatNaira(a.default_base_cost)}
                 </div>
-                <div className="text-[10px] text-muted-foreground mt-1">
+                <div className="text-[10px] text-muted-foreground mt-auto pt-1">
                   {a.sub_children_styles?.[0]?.count ?? 0} styles available
                 </div>
               </button>
