@@ -8,6 +8,7 @@ import { serviceRoleClient } from "@/lib/supabase/server";
 import { getSessionUser } from "@/lib/auth-helpers";
 import { checkRateLimit, rateLimitResponse } from "@/lib/rate-limit";
 import { requireServerEnv } from "@/lib/env";
+import { getSiteUrl } from '@/lib/site-url';
 import { initializeTransaction } from "@/lib/paystack";
 import { calculateDeliveryFee } from "@/lib/nigeria-lgas";
 import { checkoutSchema } from "@/lib/validations";
@@ -281,7 +282,7 @@ export async function POST(req: Request) {
 
     // ── 7) INITIALIZE PAYSTACK ──────────────────────────────────────
     const env = requireServerEnv();
-    const callbackUrl = `${env.NEXT_PUBLIC_SITE_URL}/checkout/success`;
+    const callbackUrl = `${getSiteUrl()}/checkout/success`;
 
     const init = await initializeTransaction({
       email: user.email,

@@ -7,6 +7,7 @@ import { serviceRoleClient } from '@/lib/supabase/server';
 import { getSessionUser } from '@/lib/auth-helpers';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 import { requireServerEnv } from '@/lib/env';
+import { getSiteUrl } from '@/lib/site-url';
 import { initializeTransaction } from '@/lib/paystack';
 import { tierSchema } from '@/lib/validations';
 import { TIER_PRICES } from '../../../../../types';
@@ -131,9 +132,10 @@ export async function POST(req: Request) {
     }
 
     // ── 7) Initialize Paystack ──────────────────────────────────────
+    const siteUrl = getSiteUrl();
     const callbackUrl = pending_brand_id
-      ? `${env.NEXT_PUBLIC_SITE_URL}/subscription?pending_brand_id=${pending_brand_id}`
-      : `${env.NEXT_PUBLIC_SITE_URL}/subscription`;
+    ? `${siteUrl}/subscription?pending_brand_id=${pending_brand_id}`
+    : `${siteUrl}/subscription`;
 
     const init = await initializeTransaction({
       email: user.email,
