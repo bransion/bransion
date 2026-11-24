@@ -1,15 +1,16 @@
-// =====================================================================
-// BRANSION — Tier purchase button (client).
-// POSTs to /api/paystack/initialize with purpose='tier', gets the
-// authorization_url, redirects. If user is already on this tier,
-// button shows "Current plan" (disabled).
-// =====================================================================
 'use client';
 
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
+
+const TIER_RANK: Record<string, number> = {
+  none: 0,
+  basic: 1,
+  standard: 2,
+  premium: 3,
+};
 
 interface Props {
   tier: 'basic' | 'standard' | 'premium';
@@ -19,9 +20,27 @@ interface Props {
   referralCode?: string;
 }
 
-export function TierButton({ tier, price, currentTier, pendingBrandId, referralCode }: Props) {
+export function TierButton({
+  tier,
+  price,
+  currentTier,
+  pendingBrandId,
+  referralCode,
+}: Props) {
   const [submitting, setSubmitting] = useState(false);
-  const isCurrent = currentTier === tier;
+
+  const currentRank = TIER_RANK[currentTier] ?? 0;
+  const tierRank = TIER_RANK[tier];
+
+  // Disabled if user already has this tier OR a higher tier (no downgrade)
+  const isDisabled = tierRank <= currentRank;
+
+  const label =
+    tierRank === currentRank
+      ? 'Current plan'
+      : tierRank < currentRank
+        ? 'Already have higher tier'
+        : `Pay ₦${price.toLocaleString()}`;
 
   async function handleClick() {
     setSubmitting(true);
@@ -29,7 +48,7 @@ export function TierButton({ tier, price, currentTier, pendingBrandId, referralC
       const res = await fetch('/api/paystack/initialize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+        body: JSON.stringify({
           purpose: 'tier',
           tier,
           pending_brand_id: pendingBrandId ?? null,
@@ -56,18 +75,16 @@ export function TierButton({ tier, price, currentTier, pendingBrandId, referralC
     <Button
       className="w-full"
       onClick={handleClick}
-      disabled={submitting || isCurrent}
-      variant={isCurrent ? 'outline' : 'default'}
+      disabled={submitting || isDisabled}
+      variant={isDisabled ? 'outline' : 'default'}
     >
-      {isCurrent ? (
-        'Current plan'
-      ) : submitting ? (
+      {submitting ? (
         <>
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
           Redirecting…
         </>
       ) : (
-        `Pay ₦${price.toLocaleString()}`
+        label
       )}
     </Button>
   );

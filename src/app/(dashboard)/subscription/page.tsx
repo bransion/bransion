@@ -1,15 +1,13 @@
 // =====================================================================
 // BRANSION — Subscription page.
-// Shows 3 pricing cards. Also handles:
-//   1. ?reference=X (return from Paystack) → verify, update tier, activate
-//      any pending brand, show success.
-//   2. ?pending_brand_id=Y → if user has tier, activate brand inline;
-//      else show pricing cards (they need to pay).
+// Uses `tier` as source of truth (account_tier kept in sync).
+// Includes manual referral contract creation as backup.
 // =====================================================================
 import { createClient, serviceRoleClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import { verifyTransaction } from '@/lib/paystack';
 import { SubscriptionView } from '@/components/subscription/SubscriptionView';
+import { roundMoney } from '@/lib/pricing';
 
 interface PageProps {
   searchParams: Promise<{
@@ -17,7 +15,6 @@ interface PageProps {
     pending_brand_id?: string;
   }>;
 }
-
 
 const TIER_RANK: Record<string, number> = {
   none: 0,
@@ -35,14 +32,14 @@ export default async function SubscriptionPage({ searchParams }: PageProps) {
   } = await supabase.auth.getUser();
   if (!user) redirect('/sign-in');
 
-  // Fetch profile with the new tier_paid_at for the referral logic
   const { data: profile } = await supabase
     .from('profiles')
     .select('tier, account_tier, tier_paid_at')
     .eq('id', user.id)
     .maybeSingle();
-    
-  const userTier = profile?.account_tier ?? profile?.tier ?? 'none';
+
+  // ── Source of truth is `tier` (not account_tier) ────────────────
+  const userTier = profile?.tier ?? 'none';
   const isFirstPurchase = !profile?.tier_paid_at;
 
   let successMessage: string | null = null;
@@ -70,6 +67,7 @@ export default async function SubscriptionPage({ searchParams }: PageProps) {
         } else if (verify.amount < Number(sp.amount) * 100) {
           errorMessage = 'Payment amount does not match.';
         } else {
+          // 1. Mark subscription_payments as paid (fires DB trigger)
           await admin
             .from('subscription_payments')
             .update({
@@ -78,19 +76,27 @@ export default async function SubscriptionPage({ searchParams }: PageProps) {
             })
             .eq('id', sp.id);
 
-          // Only set tier if this is an upgrade (never downgrade)
+          // 2. Update profile — sync BOTH tier and account_tier
           if (TIER_RANK[sp.tier] >= TIER_RANK[userTier]) {
             await admin
               .from('profiles')
               .update({
                 tier: sp.tier,
-                account_tier: sp.tier,
+                account_tier: sp.tier as 'basic' | 'standard' | 'premium',
                 tier_paid_at: new Date().toISOString(),
               })
               .eq('id', user.id);
           }
 
-          // Activate pending brand if provided
+          // 3. BACKUP: ensure referral contract exists (in case trigger missed)
+          await ensureReferralContract(
+            admin,
+            user.id,
+            Number(sp.amount),
+            sp.id
+          );
+
+          // 4. Activate pending brand if applicable
           if (pending_brand_id) {
             await admin
               .from('brands')
@@ -102,7 +108,6 @@ export default async function SubscriptionPage({ searchParams }: PageProps) {
               .eq('creator_id', user.id)
               .eq('is_active', false);
           } else {
-            // No specific brand — activate oldest pending if any
             const { data: oldest } = await admin
               .from('brands')
               .select('id')
@@ -131,7 +136,7 @@ export default async function SubscriptionPage({ searchParams }: PageProps) {
     }
   }
 
-  // ── CASE 2: ?pending_brand_id=Y (user returned from brand form) ──
+  // ── CASE 2: ?pending_brand_id=Y (returned from brand form) ──────
   if (pending_brand_id && !reference) {
     try {
       const admin = serviceRoleClient();
@@ -146,7 +151,6 @@ export default async function SubscriptionPage({ searchParams }: PageProps) {
       } else if (brand.is_active) {
         successMessage = 'Your brand is already active.';
       } else if (userTier !== 'none') {
-        // User has a tier — activate the brand now (no payment needed)
         await admin
           .from('brands')
           .update({
@@ -157,7 +161,6 @@ export default async function SubscriptionPage({ searchParams }: PageProps) {
 
         successMessage = 'Brand activated!';
       }
-      // else: userTier === 'none' → fall through, show pricing cards
     } catch (err) {
       console.error('Pending brand check error:', err);
       errorMessage = 'Could not load your brand.';
@@ -173,4 +176,109 @@ export default async function SubscriptionPage({ searchParams }: PageProps) {
       isFirstPurchase={isFirstPurchase}
     />
   );
+}
+
+// =====================================================================
+// Manual referral contract creation (backup for DB trigger)
+// Idempotent — returns early if contract already exists.
+// =====================================================================
+async function ensureReferralContract(
+  admin: ReturnType<typeof serviceRoleClient>,
+  refereeId: string,
+  amountPaid: number,
+  subscriptionPaymentId: string
+) {
+  // Does referee have a referrer?
+  const { data: referee } = await admin
+    .from('profiles')
+    .select('referred_by')
+    .eq('id', refereeId)
+    .maybeSingle();
+
+  if (!referee?.referred_by) return;
+
+  // Contract already exists? (created by DB trigger)
+  const { data: existing } = await admin
+    .from('referral_contracts')
+    .select('id')
+    .eq('referee_id', refereeId)
+    .maybeSingle();
+
+  if (existing) return;
+
+  // Fetch referrer's tier for split lock
+  const { data: referrer } = await admin
+    .from('profiles')
+    .select('account_tier, tier')
+    .eq('id', referee.referred_by)
+    .single();
+
+  if (!referrer) return;
+
+  const referrerTier =
+    (referrer.account_tier ?? referrer.tier ?? 'basic') as
+      | 'basic'
+      | 'standard'
+      | 'premium';
+
+  const lifetimeSplit =
+    referrerTier === 'premium'
+      ? ('five_percent' as const)
+      : referrerTier === 'standard'
+        ? ('two_percent' as const)
+        : ('none' as const);
+
+  // 10% of the tier payment
+  const commission = roundMoney(amountPaid * 0.1);
+
+  // Create contract
+  await admin.from('referral_contracts').insert({
+    referrer_id: referee.referred_by,
+    referee_id: refereeId,
+    initial_fee_paid: amountPaid,
+    initial_commission_pct: 10.0,
+    lifetime_split: lifetimeSplit,
+    referrer_tier_at_lock: referrerTier,
+  });
+
+  // Credit referrer wallet
+  const { data: refProfile } = await admin
+    .from('profiles')
+    .select('wallet_balance, lifetime_earnings')
+    .eq('id', referee.referred_by)
+    .single();
+
+  const newBalance = roundMoney(
+    Number(refProfile?.wallet_balance ?? 0) + commission
+  );
+  const newEarnings = roundMoney(
+    Number(refProfile?.lifetime_earnings ?? 0) + commission
+  );
+
+  await admin
+    .from('profiles')
+    .update({
+      wallet_balance: newBalance,
+      lifetime_earnings: newEarnings,
+    })
+    .eq('id', referee.referred_by);
+
+  await admin.from('wallet_transactions').insert({
+    creator_id: referee.referred_by,
+    type: 'sale_credit',
+    amount: commission,
+    balance_after: newBalance,
+    description: 'Referral commission: initial tier payment',
+    reference: `ref_${subscriptionPaymentId}`,
+  });
+
+  await admin.from('commissions_ledger').insert({
+    referrer_id: referee.referred_by,
+    referee_id: refereeId,
+    type: 'initial_tier',
+    base_amount: amountPaid,
+    commission_pct: 10.0,
+    commission_amount: commission,
+    source_fee_amount: amountPaid,
+  });
 }
