@@ -19,11 +19,11 @@ export default function TrackOrderPage() {
   async function handleTrack(e: React.FormEvent) {
     e.preventDefault();
     if (!reference || !phone) return toast.error('Enter reference and phone number');
-    
+
     setBusy(true);
     setOrder(null);
     const supabase = createClient();
-    
+
     const { data, error } = await supabase
       .from('orders')
       .select('id, status, total_amount, created_at, shipping_full_name')
@@ -45,17 +45,29 @@ export default function TrackOrderPage() {
       <div className="text-center mb-8">
         <PackageSearch className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
         <h1 className="text-3xl font-bold tracking-tight">Track your order</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Enter your payment reference and the phone number used at checkout.</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Enter your payment reference and the phone number used at checkout.
+        </p>
       </div>
 
       <form onSubmit={handleTrack} className="space-y-4 rounded-xl border bg-card p-6 shadow-sm">
         <div className="space-y-1.5">
           <Label>Payment Reference</Label>
-          <Input value={reference} onChange={e => setReference(e.target.value)} placeholder="e.g. 123e4567-e89b-12d3..." required />
+          <Input
+            value={reference}
+            onChange={(e) => setReference(e.target.value)}
+            placeholder="e.g. 123e4567-e89b-12d3..."
+            required
+          />
         </div>
         <div className="space-y-1.5">
           <Label>Phone Number</Label>
-          <Input value={phone} onChange={e => setPhone(e.target.value)} placeholder="e.g. 08012345678" required />
+          <Input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="e.g. 08012345678"
+            required
+          />
         </div>
         <Button type="submit" className="w-full" disabled={busy}>
           {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Track Order'}
@@ -66,7 +78,9 @@ export default function TrackOrderPage() {
         <div className="mt-8 rounded-xl border bg-card p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b pb-4">
             <span className="text-sm text-muted-foreground">Status</span>
-            <span className="font-semibold capitalize text-green-600 dark:text-green-400">{order.status.replace('_', ' ')}</span>
+            <span className="font-semibold capitalize text-green-600 dark:text-green-400">
+              {order.status.replace('_', ' ')}
+            </span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Name</span>

@@ -18,6 +18,7 @@ import {
   Layers,
   Megaphone,
   Share2,
+  MapPin,
   Trash2,
   LogOut,
   ChevronRight,
@@ -51,6 +52,7 @@ const NAV: NavItem[] = [
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
   { href: '/admin/finances', label: 'Finances', icon: DollarSign },
+  { href: '/admin/delivery-fees', label: 'Delivery Fees', icon: MapPin },
   { href: '/admin/fulfillment', label: 'Fulfillment', icon: Truck },
   { href: '/admin/communications', label: 'Communications', icon: Megaphone },
   { href: '/admin/referrals', label: 'Referrals', icon: Share2 },
@@ -67,13 +69,14 @@ const MOBILE_GROUPS: { title: string; items: NavItem[] }[] = [
       { href: '/admin/inventory', label: 'Inventory', icon: Package },
     ],
   },
-  {
+    {
     title: 'Commerce',
     items: [
       { href: '/admin/brands', label: 'Brands', icon: Store },
       { href: '/admin/products', label: 'Products', icon: Package },
       { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
       { href: '/admin/finances', label: 'Finances', icon: DollarSign },
+      { href: '/admin/delivery-fees', label: 'Delivery Fees', icon: MapPin },
       { href: '/admin/fulfillment', label: 'Fulfillment', icon: Truck },
     ],
   },

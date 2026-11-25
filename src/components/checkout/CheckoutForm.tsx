@@ -9,7 +9,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import Link from 'next/link';
+import { Loader2, ShoppingBag } from 'lucide-react';
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -105,13 +106,6 @@ export function CheckoutForm({
   // Use dynamic delivery fee from state, defaulting to 0 if not set
   const total = subtotal + (deliveryFee ?? 0);
 
-  // Redirect to /store if the cart is empty AND no buy-now item.
-  useEffect(() => {
-    if (items.length === 0) {
-      toast.error("Your cart is empty");
-      router.replace("/store");
-    }
-  }, [items.length, router]);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -200,10 +194,21 @@ export function CheckoutForm({
     }
   }
 
-  if (items.length === 0) {
+    if (items.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin mr-2" /> Redirecting…
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <div className="max-w-md w-full rounded-lg border bg-card p-8 text-center space-y-4">
+          <div className="mx-auto h-14 w-14 rounded-full bg-muted flex items-center justify-center">
+            <ShoppingBag className="h-7 w-7 text-muted-foreground" />
+          </div>
+          <h1 className="text-2xl font-bold">Your cart is empty</h1>
+          <p className="text-sm text-muted-foreground">
+            Add a product from the store to start your order.
+          </p>
+          <Link href="/store">
+            <Button className="w-full">Browse the Store</Button>
+          </Link>
+        </div>
       </div>
     );
   }

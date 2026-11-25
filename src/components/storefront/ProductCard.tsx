@@ -22,31 +22,42 @@ export function ProductCard({ product }: { product: any }) {
   const router = useRouter();
   const addToCart = useCart((s) => s.add);
 
+  // Handle Supabase returning joined data as object OR array
+  const apparel = Array.isArray(product.base_plain_apparel)
+    ? product.base_plain_apparel[0]
+    : product.base_plain_apparel;
+  const brand = Array.isArray(product.brands)
+    ? product.brands[0]
+    : product.brands;
+
   const sizeModifiers: Record<string, number> =
-    product.base_plain_apparel?.size_price_modifiers || { M: 0 };
+    apparel?.size_price_modifiers || { M: 0 };
   const sizes = Object.keys(sizeModifiers);
   const [selectedSize, setSelectedSize] = useState(
     sizes.includes('M') ? 'M' : sizes[0] || 'M'
   );
   const [descExpanded, setDescExpanded] = useState(false);
 
-  const baseCost = Number(product.base_plain_apparel?.default_base_cost || 0);
+  const baseCost = Number(apparel?.default_base_cost || 0);
   const styleCost = Number(
     product.sub_children_styles?.additional_cost_markup || 0
   );
   const markup = Number(product.user_profit_markup || 0);
   const sizeMod = Number(sizeModifiers[selectedSize] || 0);
-
   const displayPrice = baseCost + styleCost + markup + sizeMod;
-  const brandSlug = product.brands?.slug ?? 'bransion';
+
+  const brandSlug = brand?.slug ?? 'bransion';
   const detailHref = `/store/${brandSlug}/product/${product.id}`;
 
+  // Try every possible image field so nothing renders blank
   const imageUrl =
     product.final_composite_product_url ||
-    product.base_plain_apparel?.main_image_url ||
+    product.final_image_url ||
+    product.design_url ||
+    apparel?.main_image_url ||
     'https://placehold.co/600x600/0B0B0F/E5E5EA?text=Product';
 
-  const clothQuality = product.base_plain_apparel?.description;
+  const clothQuality = apparel?.description;
   const descriptionText = product.description || 'No description provided.';
   const shouldTruncate = descriptionText.length > 80;
 
@@ -56,7 +67,7 @@ export function ProductCard({ product }: { product: any }) {
       productId: product.id,
       size: selectedSize,
       name: product.name,
-      brandName: product.brands?.name ?? 'Bransion',
+      brandName: brand?.name ?? 'Bransion',
       brandSlug,
       imageUrl,
       sizePrice: baseCost + styleCost + sizeMod,
@@ -86,10 +97,9 @@ export function ProductCard({ product }: { product: any }) {
       </Link>
 
       <div className="p-4 flex flex-col gap-3 flex-1">
-        {/* BRAND NAME */}
         <div>
           <div className="text-xs text-muted-foreground uppercase tracking-wider truncate mb-1">
-            {product.brands?.name ?? 'Bransion'}
+            {brand?.name ?? 'Bransion'}
           </div>
           <Link
             href={detailHref}
@@ -99,7 +109,6 @@ export function ProductCard({ product }: { product: any }) {
           </Link>
         </div>
 
-        {/* CLOTH QUALITY BADGE */}
         {clothQuality && (
           <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md w-fit max-w-full">
             <Sparkles className="h-3.5 w-3.5 flex-shrink-0" />
@@ -107,7 +116,6 @@ export function ProductCard({ product }: { product: any }) {
           </div>
         )}
 
-        {/* CREATOR DESCRIPTION with Read More */}
         <div className="text-xs text-muted-foreground leading-relaxed">
           <span
             className={cn(
@@ -130,7 +138,6 @@ export function ProductCard({ product }: { product: any }) {
           )}
         </div>
 
-        {/* SIZE SELECTOR */}
         {sizes.length > 0 && (
           <Select
             value={selectedSize}
@@ -152,12 +159,10 @@ export function ProductCard({ product }: { product: any }) {
           </Select>
         )}
 
-        {/* PRICE */}
         <div className="text-xl font-bold mt-auto pt-2">
           {formatNaira(displayPrice)}
         </div>
 
-        {/* ACTIONS */}
         <div className="grid grid-cols-2 gap-2 mt-1">
           <Button variant="outline" size="sm" onClick={handleAddToCart}>
             <ShoppingBag className="mr-2 h-4 w-4" /> Add

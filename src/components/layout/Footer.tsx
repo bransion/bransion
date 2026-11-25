@@ -42,7 +42,12 @@ export function Footer() {
             <h4 className="text-sm font-semibold mb-3">Support</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li>
-                <a href="https://wa.me/" className="hover:text-foreground">
+                <a
+                  href={`https://wa.me/${(process.env.NEXT_PUBLIC_WHATSAPP_SUPPORT || '').replace(/\D/g, '')}?text=${encodeURIComponent('Hi Bransion! I need help with: ')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground"
+                >
                   WhatsApp us
                 </a>
               </li>

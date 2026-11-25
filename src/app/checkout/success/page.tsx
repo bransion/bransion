@@ -1,17 +1,16 @@
 // =====================================================================
 // BRANSION — Checkout success page (V3).
-// - Verifies payment via Paystack (backup if webhook missed).
-// - Credits creator wallet (via apply_maintenance_offset).
-// - Shows "Continue Shopping" and "Buy More" buttons.
+// Uses finalizeOrder() for BOTH 70% creator credit AND referral commissions.
+// This makes referral 2%/5% fire even on localhost (where webhooks miss).
 // =====================================================================
 import { createClient, serviceRoleClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle2, Clock, XCircle, ShoppingBag, RotateCcw } from 'lucide-react';
+import { CheckCircle2, Clock, XCircle, ShoppingBag, Store } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { verifyTransaction } from '@/lib/paystack';
+import { finalizeOrder } from '@/lib/paystack/finalize-order';
 import { formatNaira } from '@/lib/utils';
-import { calculatePricing } from '@/lib/pricing';
 import { PendingPaymentPoller } from '@/components/checkout/PendingPaymentPoller';
 
 interface PageProps {
@@ -35,7 +34,7 @@ export default async function SuccessPage({ searchParams }: PageProps) {
     redirect('/store');
   }
 
-  // ── BACKUP VERIFY (Layer 4 — works on localhost) ─────────────────
+  // ── BACKUP VERIFY (works on localhost) ──────────────────────────
   if (order && order.status === 'pending_payment') {
     try {
       const verify = await verifyTransaction(reference);
@@ -43,42 +42,21 @@ export default async function SuccessPage({ searchParams }: PageProps) {
         verify.status === 'success' &&
         verify.amount >= order.total_amount * 100
       ) {
-        await admin
-          .from('orders')
-          .update({
-            status: 'paid',
-            paid_at: verify.paidAt ?? new Date().toISOString(),
-          })
-          .eq('id', order.id)
-          .eq('status', 'pending_payment');
-
-        // Credit each creator in this order
-        const { data: items } = await admin
-          .from('order_items')
-          .select(`markup, quantity, products(brands(creator_id))`)
-          .eq('order_id', order.id);
-
-        type OI = {
-          markup: number;
-          quantity: number;
-          products: { brands: { creator_id: string } | null } | null;
-        };
-
-        for (const item of (items ?? []) as unknown as OI[]) {
-          const creatorId = item.products?.brands?.creator_id;
-          if (!creatorId) continue;
-          const totalMarkup = Number(item.markup) * Number(item.quantity);
-          const { netCreatorProfit } = calculatePricing(0, totalMarkup);
-          await admin.rpc('apply_maintenance_offset', {
-            p_creator_id: creatorId,
-            p_credit_amount: netCreatorProfit,
-          });
-        }
-
+        await finalizeOrder(order.id, admin);
         order = await fetchOrder(reference);
       }
     } catch (err) {
       console.warn('Backup verify failed:', err);
+    }
+  }
+
+  // ── If order is paid but referral commissions may be missing ────
+  // (e.g. webhook fired first, but success page loaded after)
+  if (order && (order.status === 'paid' || order.paid_at)) {
+    try {
+      await finalizeOrder(order.id, admin);
+    } catch (err) {
+      console.warn('Late finalize failed:', err);
     }
   }
 
@@ -142,19 +120,18 @@ export default async function SuccessPage({ searchParams }: PageProps) {
           </div>
         )}
 
-        {/* TWO BUTTONS: Continue Shopping + Buy More */}
         {paid && (
           <div className="flex flex-col gap-2 pt-2">
-            <Link href="/store">
+            <Link href="/checkout">
               <Button className="w-full">
                 <ShoppingBag className="mr-2 h-4 w-4" />
                 Continue Shopping
               </Button>
             </Link>
-            <Link href="/checkout">
+            <Link href="/store">
               <Button variant="outline" className="w-full">
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Buy More
+                <Store className="mr-2 h-4 w-4" />
+                Go to Store
               </Button>
             </Link>
           </div>

@@ -1,17 +1,13 @@
 // =====================================================================
 // BRANSION — Paystack webhook.
-// Handles order + tier purposes. Logs signature mismatches.
-// NEW: lifetime referral commissions carved from Bransion's 30%.
+// Order payments → finalizeOrder (idempotent, credits 70% + referral)
+// Tier payments  → handleTierWebhook (unchanged — DB trigger handles 10%)
 // =====================================================================
 import { NextResponse } from 'next/server';
 import { createHmac, timingSafeEqual } from 'crypto';
 import { serviceRoleClient } from '@/lib/supabase/server';
 import { requireServerEnv } from '@/lib/env';
-import { calculatePricing, roundMoney } from '@/lib/pricing';
-import {
-  computeLifetimeSaleCommission,
-  computeSourceFeeAmount,
-} from '@/lib/referral/commissions';
+import { finalizeOrder } from '@/lib/paystack/finalize-order';
 import { writeAuditLog } from '@/lib/audit';
 
 export async function POST(req: Request) {
@@ -91,7 +87,7 @@ export async function POST(req: Request) {
 }
 
 // =====================================================================
-// ORDER PAYMENT HANDLER
+// ORDER PAYMENT — via shared finalizeOrder (idempotent)
 // =====================================================================
 async function handleOrderWebhook(
   data: { reference: string; status: string; amount: number },
@@ -99,138 +95,25 @@ async function handleOrderWebhook(
 ) {
   const reference = data.reference;
 
-  const { data: order, error: orderErr } = await admin
+  const { data: order } = await admin
     .from('orders')
-    .select('id, buyer_id, brand_id, status, payment_reference, paid_at')
+    .select('id')
     .eq('payment_reference', reference)
     .maybeSingle();
 
-  if (orderErr || !order) {
+  if (!order) {
     console.warn('Order webhook: order not found for reference', reference);
     return NextResponse.json({ received: true });
   }
 
-  if (order.status === 'paid' || order.paid_at) {
-    return NextResponse.json({ received: true, idempotent: true });
-  }
+  const result = await finalizeOrder(order.id, admin);
 
-  const { error: updateErr } = await admin
-    .from('orders')
-    .update({ status: 'paid', paid_at: new Date().toISOString() })
-    .eq('id', order.id)
-    .eq('status', 'pending_payment');
-
-  if (updateErr) {
-    console.error('Order webhook: update failed', updateErr);
-    return NextResponse.json({ error: 'Update failed' }, { status: 500 });
-  }
-
-  const { data: orderItems } = await admin
-    .from('order_items')
-    .select(
-      `id, markup, quantity,
-       products(brands(creator_id))`
-    )
-    .eq('order_id', order.id);
-
-  type OI = {
-    id: string;
-    markup: number;
-    quantity: number;
-    products: { brands: { creator_id: string } | null } | null;
-  };
-
-  // ── Aggregate markup by creator first (handles multi-item orders) ─
-  const markupByCreator = new Map<string, number>();
-  for (const item of (orderItems ?? []) as unknown as OI[]) {
-    const creatorId = item.products?.brands?.creator_id;
-    if (!creatorId) continue;
-    const totalMarkup = Number(item.markup) * Number(item.quantity);
-    markupByCreator.set(
-      creatorId,
-      (markupByCreator.get(creatorId) ?? 0) + totalMarkup
+  if (!result.ok) {
+    console.error('finalizeOrder failed:', result.reason);
+    return NextResponse.json(
+      { error: result.reason ?? 'finalize failed' },
+      { status: 500 }
     );
-  }
-
-  // ── Single loop per creator: credit 70% + referral commission ────
-  for (const [creatorId, markupTotal] of markupByCreator.entries()) {
-    // ── 1) Credit creator wallet (70% of markup) ───────────────────
-    const { netCreatorProfit } = calculatePricing(0, markupTotal);
-
-    const { error: rpcErr } = await admin.rpc('apply_maintenance_offset', {
-      p_creator_id: creatorId,
-      p_credit_amount: netCreatorProfit,
-    });
-
-    if (rpcErr) {
-      console.error('apply_maintenance_offset failed:', rpcErr, {
-        creatorId,
-        netCreatorProfit,
-      });
-    }
-
-    // ── 2) Lifetime referral commission (2%/5% of markup) ──────────
-    // Carved from Bransion's 30%. Creator's 70% is untouched.
-    // Basic referrers get 'none' split → no credit.
-    const { data: contract } = await admin
-      .from('referral_contracts')
-      .select('id, referrer_id, lifetime_split')
-      .eq('referee_id', creatorId)
-      .eq('is_active', true)
-      .maybeSingle();
-
-    if (!contract) continue;
-    if (contract.lifetime_split === 'none') continue;
-
-    const commission = computeLifetimeSaleCommission(
-      markupTotal,
-      contract.lifetime_split
-    );
-    if (commission <= 0) continue;
-
-    const sourceFee = computeSourceFeeAmount(markupTotal);
-
-    const { data: referrer } = await admin
-      .from('profiles')
-      .select('wallet_balance, lifetime_earnings')
-      .eq('id', contract.referrer_id)
-      .maybeSingle();
-
-    const currentBalance = Number(referrer?.wallet_balance ?? 0);
-    const currentEarnings = Number(referrer?.lifetime_earnings ?? 0);
-    const newBalance = roundMoney(currentBalance + commission);
-    const newEarnings = roundMoney(currentEarnings + commission);
-
-    await admin
-      .from('profiles')
-      .update({
-        wallet_balance: newBalance,
-        lifetime_earnings: newEarnings,
-      })
-      .eq('id', contract.referrer_id);
-
-    await admin.from('wallet_transactions').insert({
-      creator_id: contract.referrer_id,
-      order_id: order.id,
-      type: 'sale_credit',
-      amount: commission,
-      balance_after: newBalance,
-      description: `Referral commission on order ${order.id.slice(0, 8)}`,
-      reference: `ref_order_${order.id}_${creatorId}`,
-    });
-
-    const pct = contract.lifetime_split === 'five_percent' ? 5 : 2;
-
-    await admin.from('commissions_ledger').insert({
-      referrer_id: contract.referrer_id,
-      referee_id: creatorId,
-      order_id: order.id,
-      type: 'lifetime_sale',
-      base_amount: markupTotal,
-      commission_pct: pct,
-      commission_amount: commission,
-      source_fee_amount: sourceFee,
-    });
   }
 
   return NextResponse.json({ received: true, order_id: order.id });
@@ -308,6 +191,7 @@ async function handleTierWebhook(
       .from('profiles')
       .update({
         tier,
+        account_tier: tier,
         tier_paid_at: new Date().toISOString(),
       })
       .eq('id', userId);
@@ -343,10 +227,8 @@ async function handleTierWebhook(
     }
   }
 
-  // Note: The 10% initial referral commission is handled by the DB
-  // trigger `lock_referral_contract` on subscription_payments.status='paid'.
-  // Basic referrers get 'none' split (0% lifetime), Standard get 2%,
-  // Premium get 5% — all set at contract lock time.
+  // 10% initial referral commission handled by DB trigger
+  // `lock_referral_contract` on subscription_payments.status='paid'.
 
   return NextResponse.json({ received: true, tier });
 }

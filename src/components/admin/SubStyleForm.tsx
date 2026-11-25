@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from 'react';
 import { useRouter } from "next/navigation";
 import { Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -33,6 +33,7 @@ export function SubStyleForm({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [cost, setCost] = useState("");
@@ -121,36 +122,24 @@ export function SubStyleForm({
             <div className="space-y-1.5">
               <Label>Preview Image</Label>
               <div className="flex items-center gap-3">
-                {previewUrl && (
-                  <img
-                    src={previewUrl}
-                    alt="Preview"
-                    className="h-10 w-10 object-cover rounded"
-                  />
-                )}
+                {previewUrl && <img src={previewUrl} alt="Preview" className="h-10 w-10 object-cover rounded" />}
                 <input
                   type="file"
-                  id="style-img"
+                  ref={fileInputRef}
                   className="hidden"
                   onChange={handleUpload}
                   disabled={uploading}
                   accept="image/*"
                 />
-                <label htmlFor="style-img">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={uploading}
-                  >
-                    {uploading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Upload className="mr-2 h-4 w-4" />
-                    )}{" "}
-                    Upload
-                  </Button>
-                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />} Upload
+                </Button>
               </div>
             </div>
           </div>

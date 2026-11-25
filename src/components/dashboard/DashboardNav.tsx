@@ -13,6 +13,7 @@ import {
   ArrowLeft,
   Share2,
   ShoppingBag,
+  MessageCircle,
   Trash2,
   LogOut,
 } from 'lucide-react';
@@ -53,6 +54,11 @@ const MOBILE_NAV: NavItem[] = [
   { href: '/wallet', label: 'Wallet', icon: Wallet },
   { href: '/brands', label: 'Brands', icon: Store },
 ];
+
+const WHATSAPP_NUMBER = (process.env.NEXT_PUBLIC_WHATSAPP_SUPPORT || '').replace(/\D/g, '');
+const WHATSAPP_URL = WHATSAPP_NUMBER
+  ? `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi Bransion! I need help with: ')}`
+  : null;
 
 interface Props {
   user: {
@@ -124,6 +130,18 @@ export function DashboardNav({ user }: Props) {
             <ArrowLeft className="h-3 w-3" />
             Back to Store
           </Link>
+
+          {WHATSAPP_URL && (
+            <a
+              href={WHATSAPP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 rounded-md px-3 py-2 text-xs text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <MessageCircle className="h-3 w-3" />
+              Support (WhatsApp)
+            </a>
+          )}
 
           <div className="flex items-center gap-2 px-2 py-2">
             <Avatar className="h-8 w-8">
@@ -206,6 +224,17 @@ export function DashboardNav({ user }: Props) {
                 <Share2 className="mr-2 h-4 w-4" />
                 Refer & Earn
               </DropdownMenuItem>
+
+              {WHATSAPP_URL && (
+                <DropdownMenuItem
+                  onClick={() => window.open(WHATSAPP_URL, '_blank', 'noopener,noreferrer')}
+                  className="cursor-pointer"
+                >
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  Support (WhatsApp)
+                </DropdownMenuItem>
+              )}
+
               {isAdmin && (
                 <DropdownMenuItem
                   onClick={() => router.push('/admin')}

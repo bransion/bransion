@@ -6,6 +6,8 @@ import { serviceRoleClient } from '@/lib/supabase/server';
 import { formatNaira } from '@/lib/utils';
 import { Download } from 'lucide-react';
 import { AdminActionButton } from '@/components/admin/AdminActionButton';
+import { Button } from '@/components/ui/button';
+import { Eye } from 'lucide-react';
 import Link from 'next/link';
 import { format } from 'date-fns';
 
@@ -146,15 +148,23 @@ export default async function AdminOrdersPage({ searchParams }: PageProps) {
                       {o.status.replace('_', ' ')}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-right">
-                    {o.status === 'paid' && (
-                      <AdminActionButton
-                        action="order.fulfill"
-                        payload={{ orderId: o.id }}
-                        label="Mark fulfilled"
-                        confirmMessage={`Mark order ${o.id.slice(0, 8)} as fulfilled? This is irreversible.`}
-                      />
-                    )}
+                                    <td className="py-3 px-4 text-right">
+                    <div className="flex justify-end gap-2">
+                      <Link href={`/admin/orders/${o.id}`}>
+                        <Button size="sm" variant="outline">
+                          <Eye className="mr-1.5 h-3.5 w-3.5" />
+                          View
+                        </Button>
+                      </Link>
+                      {o.status === 'paid' && (
+                        <AdminActionButton
+                          action="order.fulfill"
+                          payload={{ orderId: o.id }}
+                          label="Mark fulfilled"
+                          confirmMessage={`Mark order ${o.id.slice(0, 8)} as fulfilled? This is irreversible.`}
+                        />
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))

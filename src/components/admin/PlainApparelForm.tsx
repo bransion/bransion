@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from 'react';
 import { useRouter } from "next/navigation";
 import { Loader2, Upload } from "lucide-react";
 import { toast } from "sonner";
@@ -55,6 +55,7 @@ export function PlainApparelForm({
   const router = useRouter();
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState("");
   const [category, setCategory] = useState("t-shirt");
@@ -193,39 +194,27 @@ export function PlainApparelForm({
                 required
               />
             </div>
-            <div className="space-y-1.5">
+              <div className="space-y-1.5">
               <Label>Main Image</Label>
               <div className="flex items-center gap-3">
-                {mainImageUrl && (
-                  <img
-                    src={mainImageUrl}
-                    alt="Preview"
-                    className="h-10 w-10 object-cover rounded"
-                  />
-                )}
+                {mainImageUrl && <img src={mainImageUrl} alt="Preview" className="h-10 w-10 object-cover rounded" />}
                 <input
                   type="file"
-                  id="apparel-img"
+                  ref={fileInputRef}
                   className="hidden"
                   onChange={handleUpload}
                   disabled={uploading}
                   accept="image/*"
                 />
-                <label htmlFor="apparel-img">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={uploading}
-                  >
-                    {uploading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Upload className="mr-2 h-4 w-4" />
-                    )}{" "}
-                    Upload
-                  </Button>
-                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />} Upload
+                </Button>
               </div>
             </div>
           </div>
