@@ -30,7 +30,27 @@ export type WithdrawalStatus = 'pending' | 'approved' | 'paid' | 'rejected';
 export type SubscriptionPaymentStatus = 'pending' | 'paid' | 'failed';
 
 // ---------- V3 ENUMS ----------
-export type ApparelCategory = 't-shirt' | 'hoodie' | 'sweatshirt' | 'polo' | 'cap' | 'trouser' | 'jacket';
+export type ApparelCategory =
+  | 't-shirt'
+  | 'hoodie'
+  | 'sweatshirt'
+  | 'polo'
+  | 'cap'
+  | 'trouser'
+  | 'jacket'
+  | 'shoes'
+  | 'sneakers'
+  | 'bag'
+  | 'shorts'
+  | 'tank-top'
+  | 'long-sleeve'
+  | 'joggers'
+  | 'bucket-hat'
+  | 'beanie'
+  | 'socks'
+  | 'dress'
+  | 'skirt'
+  | 'suit';
 export type ProductStatusV3 = 'pending_review' | 'published' | 'rejected';
 
 // ---------- ROW TYPES ----------

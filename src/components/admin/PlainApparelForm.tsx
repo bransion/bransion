@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
 import { useState, useRef } from 'react';
-import { useRouter } from "next/navigation";
-import { Loader2, Upload } from "lucide-react";
-import { toast } from "sonner";
+import { useRouter } from 'next/navigation';
+import { Loader2, Upload } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -11,38 +11,61 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select";
+} from '@/components/ui/select';
 import {
   createPlainApparel,
   uploadApparelImage,
-} from "@/app/actions/admin-inventory";
-import { formatNaira } from "@/lib/utils";
+} from '@/app/actions/admin-inventory';
+import { formatNaira } from '@/lib/utils';
 
 const SIZES = [
-  "S",
-  "M",
-  "L",
-  "XL",
-  "XXL",
-  "3XL",
-  "4XL",
-  "5XL",
-  "6XL",
-  "7XL",
-  "8XL",
-  "9XL",
-  "10XL",
+  'S',
+  'M',
+  'L',
+  'XL',
+  'XXL',
+  '3XL',
+  '4XL',
+  '5XL',
+  '6XL',
+  '7XL',
+  '8XL',
+  '9XL',
+  '10XL',
+];
+
+const CATEGORIES: string[] = [
+  't-shirt',
+  'hoodie',
+  'sweatshirt',
+  'polo',
+  'cap',
+  'trouser',
+  'jacket',
+  'shoes',
+  'sneakers',
+  'bag',
+  'shorts',
+  'tank-top',
+  'long-sleeve',
+  'joggers',
+  'bucket-hat',
+  'beanie',
+  'socks',
+  'dress',
+  'skirt',
+  'suit',
 ];
 
 export function PlainApparelForm({
@@ -57,11 +80,11 @@ export function PlainApparelForm({
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [name, setName] = useState("");
-  const [category, setCategory] = useState("t-shirt");
-  const [description, setDescription] = useState("");
-  const [basePrice, setBasePrice] = useState("");
-  const [mainImageUrl, setMainImageUrl] = useState("");
+  const [name, setName] = useState('');
+  const [category, setCategory] = useState('t-shirt');
+  const [description, setDescription] = useState('');
+  const [basePrice, setBasePrice] = useState('');
+  const [mainImageUrl, setMainImageUrl] = useState('');
 
   // size -> modifier (null means unchecked)
   const [sizes, setSizes] = useState<Record<string, number | null>>({ M: 0 });
@@ -69,22 +92,34 @@ export function PlainApparelForm({
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const okTypes = new Set(['image/jpeg', 'image/png', 'image/webp']);
+    if (!okTypes.has(file.type)) {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return toast.error('Only JPEG, PNG, or WebP allowed');
+    }
+    if (file.size > 5_000_000) {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return toast.error('Max 5 MB');
+    }
+
     setUploading(true);
     const fd = new FormData();
-    fd.append("file", file);
+    fd.append('file', file);
     try {
       const url = await uploadApparelImage(fd);
       setMainImageUrl(url);
-      toast.success("Image uploaded");
-    } catch (err) {
-      toast.error("Upload failed");
+      toast.success('Image uploaded');
+    } catch {
+      toast.error('Upload failed');
     } finally {
       setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   }
 
   function toggleSize(size: string) {
-    if (size === "M") return;
+    if (size === 'M') return;
     setSizes((prev) => {
       const next = { ...prev };
       if (next[size] === undefined || next[size] === null) next[size] = 0;
@@ -100,29 +135,30 @@ export function PlainApparelForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!name || !description || !basePrice || !mainImageUrl)
-      return toast.error("Please fill all fields and upload an image");
+    if (!name || !description || !basePrice || !mainImageUrl) {
+      return toast.error('Please fill all fields and upload an image');
+    }
 
     // Build the modifiers object, ensuring M is always 0
     const finalModifiers: Record<string, number> = { M: 0 };
-    Object.entries(sizes).forEach(([k, v]) => {
-      if (v !== null && k !== "M") finalModifiers[k] = v;
-    });
+    for (const [k, v] of Object.entries(sizes)) {
+      if (v !== null && k !== 'M') finalModifiers[k] = v;
+    }
 
     const fd = new FormData();
-    fd.append("name", name);
-    fd.append("category", category);
-    fd.append("description", description);
-    fd.append("default_base_cost", basePrice);
-    fd.append("main_image_url", mainImageUrl);
-    fd.append("size_price_modifiers", JSON.stringify(finalModifiers));
+    fd.append('name', name);
+    fd.append('category', category);
+    fd.append('description', description);
+    fd.append('default_base_cost', basePrice);
+    fd.append('main_image_url', mainImageUrl);
+    fd.append('size_price_modifiers', JSON.stringify(finalModifiers));
 
     setBusy(true);
     const res = await createPlainApparel(fd);
     setBusy(false);
 
     if (res.ok) {
-      toast.success("Plain apparel created");
+      toast.success('Plain apparel created');
       onOpenChange(false);
       router.refresh();
     } else {
@@ -139,6 +175,7 @@ export function PlainApparelForm({
             Create a base garment that creators can design on.
           </DialogDescription>
         </DialogHeader>
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
@@ -160,17 +197,9 @@ export function PlainApparelForm({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {[
-                    "t-shirt",
-                    "hoodie",
-                    "sweatshirt",
-                    "polo",
-                    "cap",
-                    "trouser",
-                    "jacket",
-                  ].map((c) => (
+                  {CATEGORIES.map((c) => (
                     <SelectItem key={c} value={c} className="capitalize">
-                      {c}
+                      {c.replace('-', ' ')}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -179,13 +208,21 @@ export function PlainApparelForm({
           </div>
 
           <div className="space-y-1.5">
-            <Label>Cloth Quality & Description (Visible to Creators & Buyers)</Label>
-            <Textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder="e.g. 100% combed cotton, heavyweight 180g. Premium quality." required />
+            <Label>
+              Cloth Quality & Description (Visible to Creators & Buyers)
+            </Label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={3}
+              placeholder="e.g. 100% combed cotton, heavyweight 180g. Premium quality."
+              required
+            />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Base 'M' Price (₦)</Label>
+              <Label>Base &apos;M&apos; Price (₦)</Label>
               <Input
                 type="number"
                 value={basePrice}
@@ -194,17 +231,24 @@ export function PlainApparelForm({
                 required
               />
             </div>
-              <div className="space-y-1.5">
+            <div className="space-y-1.5">
               <Label>Main Image</Label>
               <div className="flex items-center gap-3">
-                {mainImageUrl && <img src={mainImageUrl} alt="Preview" className="h-10 w-10 object-cover rounded" />}
+                {mainImageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={mainImageUrl}
+                    alt="Preview"
+                    className="h-10 w-10 object-cover rounded"
+                  />
+                )}
                 <input
                   type="file"
                   ref={fileInputRef}
                   className="hidden"
                   onChange={handleUpload}
                   disabled={uploading}
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                 />
                 <Button
                   type="button"
@@ -213,7 +257,12 @@ export function PlainApparelForm({
                   onClick={() => fileInputRef.current?.click()}
                   disabled={uploading}
                 >
-                  {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />} Upload
+                  {uploading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Upload className="mr-2 h-4 w-4" />
+                  )}
+                  Upload
                 </Button>
               </div>
             </div>
@@ -232,17 +281,19 @@ export function PlainApparelForm({
                 >
                   <input
                     type="checkbox"
-                    checked={sizes[s] !== undefined}
+                    checked={sizes[s] !== undefined && sizes[s] !== null}
                     onChange={() => toggleSize(s)}
-                    disabled={s === "M"}
+                    disabled={s === 'M'}
                     className="h-4 w-4"
                   />
                   <span className="font-medium w-8">{s}</span>
                   <Input
                     type="number"
-                    value={sizes[s] ?? ""}
+                    value={sizes[s] ?? ''}
                     onChange={(e) => updateSizeMod(s, e.target.value)}
-                    disabled={sizes[s] === undefined || s === "M"}
+                    disabled={
+                      sizes[s] === undefined || sizes[s] === null || s === 'M'
+                    }
                     placeholder="0"
                     className="h-8 flex-1"
                   />
@@ -256,14 +307,18 @@ export function PlainApparelForm({
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
+              disabled={busy}
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={busy}>
+            <Button type="submit" disabled={busy || uploading}>
               {busy ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating…
+                </>
               ) : (
-                "Create Plain Apparel"
+                'Create Plain Apparel'
               )}
             </Button>
           </DialogFooter>

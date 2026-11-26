@@ -5,7 +5,11 @@ import { z } from 'zod';
 
 export const plainApparelSchema = z.object({
   name: z.string().min(2).max(100),
-  category: z.enum(['t-shirt','hoodie','sweatshirt','polo','cap','trouser','jacket']),
+    category: z.enum([
+    't-shirt','hoodie','sweatshirt','polo','cap','trouser','jacket',
+    'shoes','sneakers','bag','shorts','tank-top','long-sleeve','joggers',
+    'bucket-hat','beanie','socks','dress','skirt','suit',
+  ]),
   description: z.string().min(10),
   main_image_url: z.string().url(),
   default_base_cost: z.coerce.number().positive(),

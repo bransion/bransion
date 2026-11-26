@@ -1,5 +1,5 @@
 import { createPublicClient } from '@/lib/supabase/public';
-import { ProductGrid } from '@/components/storefront/ProductGrid';
+import { StoreProductList } from '@/components/storefront/StoreProductList';
 
 export const revalidate = 60;
 
@@ -11,6 +11,7 @@ export default async function StorePage() {
       *,
       brands(name, slug, logo_url),
       base_plain_apparel(*),
+      plain_apparel(name, description, image_url),
       sub_children_styles(*)
     `)
     .eq('status', 'published')
@@ -24,7 +25,7 @@ export default async function StorePage() {
           Original apparel from independent Bransion creators.
         </p>
       </div>
-      <ProductGrid
+      <StoreProductList
         products={(products ?? []) as any}
         emptyMessage="No products yet. Be the first creator to launch a brand on Bransion."
         emptyCta={{ label: 'Create a Brand', href: '/brands/new' }}

@@ -16,6 +16,7 @@ import {
   LogOut,
   ShoppingBag,
   Trash2,
+  MessageCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -319,6 +320,27 @@ export function Header({ user }: HeaderProps) {
               </div>
             )}
           </div>
+
+          {/* Support — always visible */}
+          {process.env.NEXT_PUBLIC_WHATSAPP_SUPPORT && (
+            <div className="border-b py-2">
+              <div className="px-5 py-2 text-[10px] uppercase font-semibold tracking-wider text-muted-foreground">
+                Support
+              </div>
+              <nav className="px-2">
+                <a
+                  href={`https://wa.me/${(process.env.NEXT_PUBLIC_WHATSAPP_SUPPORT || '').replace(/\D/g, '')}?text=${encodeURIComponent('Hi Bransion! I need help with: ')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={closeMobileMenu}
+                  className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-emerald-700 dark:text-emerald-400 hover:bg-emerald-500/10"
+                >
+                  <MessageCircle className="h-4 w-4 flex-shrink-0" />
+                  <span className="flex-1">WhatsApp Support</span>
+                </a>
+              </nav>
+            </div>
+          )}
 
           {/* Footer — user info + sign out */}
           <div className="border-t p-3 space-y-2 bg-muted/30">

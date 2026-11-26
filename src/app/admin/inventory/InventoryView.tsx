@@ -1,30 +1,43 @@
-// src/app/admin/inventory/InventoryView.tsx (NEW)
-"use client";
+'use client';
 
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Plus, Package } from "lucide-react";
-import { InventoryCard } from "@/components/admin/InventoryCard";
-import { PlainApparelForm } from "@/components/admin/PlainApparelForm";
-import { SubStyleForm } from "@/components/admin/SubStyleForm";
-import { StyleRow } from "@/components/admin/StyleRow";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Plus, Package } from 'lucide-react';
+import { InventoryCard } from '@/components/admin/InventoryCard';
+import { PlainApparelForm } from '@/components/admin/PlainApparelForm';
+import { SubStyleForm } from '@/components/admin/SubStyleForm';
+import { StyleRow } from '@/components/admin/StyleRow';
+import { EditPlainApparelDialog } from '@/components/admin/EditPlainApparelDialog';
+import { EditSubStyleDialog } from '@/components/admin/EditSubStyleDialog';
+import { DeleteApparelDialog } from '@/components/admin/DeleteApparelDialog';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { listSubStylesForApparel } from "@/app/actions/admin-inventory";
+} from '@/components/ui/dialog';
+import { listSubStylesForApparel } from '@/app/actions/admin-inventory';
 
 export function InventoryView({ initialApparels }: { initialApparels: any[] }) {
   const [addOpen, setAddOpen] = useState(false);
+
   const [manageApparel, setManageApparel] = useState<any>(null);
   const [styles, setStyles] = useState<any[]>([]);
   const [addStyleOpen, setAddStyleOpen] = useState(false);
 
+  const [editingApparel, setEditingApparel] = useState<any>(null);
+  const [deletingApparel, setDeletingApparel] = useState<any>(null);
+  const [editingStyle, setEditingStyle] = useState<any>(null);
+
   async function handleManage(apparel: any) {
     setManageApparel(apparel);
     const s = await listSubStylesForApparel(apparel.id);
+    setStyles(s);
+  }
+
+  async function reloadStyles() {
+    if (!manageApparel) return;
+    const s = await listSubStylesForApparel(manageApparel.id);
     setStyles(s);
   }
 
@@ -62,6 +75,8 @@ export function InventoryView({ initialApparels }: { initialApparels: any[] }) {
               key={a.id}
               apparel={a}
               onManage={() => handleManage(a)}
+              onEdit={() => setEditingApparel(a)}
+              onDelete={() => setDeletingApparel(a)}
             />
           ))}
         </div>
@@ -85,7 +100,14 @@ export function InventoryView({ initialApparels }: { initialApparels: any[] }) {
                   No styles yet.
                 </p>
               ) : (
-                styles.map((s) => <StyleRow key={s.id} style={s} />)
+                styles.map((s) => (
+                  <StyleRow
+                    key={s.id}
+                    style={s}
+                    onEdit={() => setEditingStyle(s)}
+                    onToggled={reloadStyles}
+                  />
+                ))
               )}
             </div>
             <Button
@@ -103,7 +125,46 @@ export function InventoryView({ initialApparels }: { initialApparels: any[] }) {
         <SubStyleForm
           apparelId={manageApparel.id}
           open={addStyleOpen}
-          onOpenChange={setAddStyleOpen}
+          onOpenChange={(o) => {
+            setAddStyleOpen(o);
+            if (!o && manageApparel) reloadStyles();
+          }}
+        />
+      )}
+
+      {/* Edit Apparel Dialog */}
+      {editingApparel && (
+        <EditPlainApparelDialog
+          apparel={editingApparel}
+          open={!!editingApparel}
+          onOpenChange={(o) => {
+            if (!o) setEditingApparel(null);
+          }}
+        />
+      )}
+
+      {/* Delete Apparel Dialog */}
+      {deletingApparel && (
+        <DeleteApparelDialog
+          apparel={deletingApparel}
+          open={!!deletingApparel}
+          onOpenChange={(o) => {
+            if (!o) setDeletingApparel(null);
+          }}
+        />
+      )}
+
+      {/* Edit Sub-Style Dialog */}
+      {editingStyle && (
+        <EditSubStyleDialog
+          style={editingStyle}
+          open={!!editingStyle}
+          onOpenChange={(o) => {
+            if (!o) {
+              setEditingStyle(null);
+              if (manageApparel) reloadStyles();
+            }
+          }}
         />
       )}
     </div>

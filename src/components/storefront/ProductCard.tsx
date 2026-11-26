@@ -18,17 +18,20 @@ import { formatNaira, cn } from '@/lib/utils';
 import { useCart } from '@/lib/store/cart';
 import { ShareButton } from './ShareButton';
 
+function pickFirst<T>(val: T | T[] | null | undefined): T | null {
+  if (val == null) return null;
+  if (Array.isArray(val)) return val.length > 0 ? val[0] : null;
+  return val;
+}
+
 export function ProductCard({ product }: { product: any }) {
   const router = useRouter();
   const addToCart = useCart((s) => s.add);
 
-  // Handle Supabase returning joined data as object OR array
-  const apparel = Array.isArray(product.base_plain_apparel)
-    ? product.base_plain_apparel[0]
-    : product.base_plain_apparel;
-  const brand = Array.isArray(product.brands)
-    ? product.brands[0]
-    : product.brands;
+  const apparel = pickFirst<any>(product.base_plain_apparel);
+  const brand = pickFirst<any>(product.brands);
+  const style = pickFirst<any>(product.sub_children_styles);
+  const v2Apparel = pickFirst<any>(product.plain_apparel);
 
   const sizeModifiers: Record<string, number> =
     apparel?.size_price_modifiers || { M: 0 };
@@ -39,25 +42,39 @@ export function ProductCard({ product }: { product: any }) {
   const [descExpanded, setDescExpanded] = useState(false);
 
   const baseCost = Number(apparel?.default_base_cost || 0);
-  const styleCost = Number(
-    product.sub_children_styles?.additional_cost_markup || 0
-  );
+  const styleCost = Number(style?.additional_cost_markup || 0);
   const markup = Number(product.user_profit_markup || 0);
   const sizeMod = Number(sizeModifiers[selectedSize] || 0);
-  const displayPrice = baseCost + styleCost + markup + sizeMod;
 
+  const displayPrice = baseCost + styleCost + markup + sizeMod;
   const brandSlug = brand?.slug ?? 'bransion';
   const detailHref = `/store/${brandSlug}/product/${product.id}`;
 
-  // Try every possible image field so nothing renders blank
   const imageUrl =
     product.final_composite_product_url ||
     product.final_image_url ||
     product.design_url ||
     apparel?.main_image_url ||
+    v2Apparel?.image_url ||
     'https://placehold.co/600x600/0B0B0F/E5E5EA?text=Product';
 
-  const clothQuality = apparel?.description;
+  // ── Cloth Quality — V3 base_plain_apparel description ONLY ─────
+  // (V2 `plain_apparel.description` is ignored — it's legacy seed data.)
+    const clothQuality =
+    typeof apparel?.description === 'string' && apparel.description.trim().length > 0
+      ? apparel.description.trim()
+      : null;
+
+  // DEBUG: remove after verifying
+  if (typeof window === 'undefined') {
+    console.log('[ProductCard]', product.name, {
+      hasApparel: !!apparel,
+      apparelName: apparel?.name,
+      description: apparel?.description,
+      clothQuality,
+    });
+  }
+
   const descriptionText = product.description || 'No description provided.';
   const shouldTruncate = descriptionText.length > 80;
 
@@ -109,10 +126,11 @@ export function ProductCard({ product }: { product: any }) {
           </Link>
         </div>
 
+        {/* CLOTH QUALITY — only if description exists. No fallback. */}
         {clothQuality && (
-          <div className="flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md w-fit max-w-full">
-            <Sparkles className="h-3.5 w-3.5 flex-shrink-0" />
-            <span className="truncate">{clothQuality}</span>
+          <div className="flex items-start gap-1.5 text-xs font-medium text-emerald-800 dark:text-emerald-300 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-1.5 rounded-md w-fit max-w-full">
+            <Sparkles className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+            <span className="line-clamp-2">{clothQuality}</span>
           </div>
         )}
 
