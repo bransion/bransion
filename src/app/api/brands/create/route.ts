@@ -128,11 +128,11 @@ export async function POST(req: Request) {
     const slug = await generateUniqueSlug(admin, data.name);
     const isPending = tier === 'none';
 
-    const { data: inserted, error: insertErr } = await admin
+       const { data: inserted, error: insertErr } = await admin
       .from('brands')
       .insert({
         creator_id: user.id,
-        name: data.name,
+        name: data.name.trim(),
         slug,
         description: data.description || null,
         phone: data.phone || null,
@@ -144,6 +144,16 @@ export async function POST(req: Request) {
       .single();
 
     if (insertErr || !inserted) {
+      // 23505 = Postgres unique violation (brand name taken)
+      if (insertErr?.code === '23505') {
+        return NextResponse.json(
+          {
+            error:
+              'This brand name has already been taken. Please choose another name.',
+          },
+          { status: 400 }
+        );
+      }
       console.error('Brand insert error:', insertErr);
       return NextResponse.json(
         { error: 'Failed to create brand' },

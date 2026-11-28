@@ -8,7 +8,6 @@ import {
   Menu,
   X,
   Store,
-  Truck,
   LayoutDashboard,
   Wallet,
   Share2,
@@ -90,18 +89,14 @@ export function Header({ user }: HeaderProps) {
         </div>
 
         {/* ── CENTER: Desktop nav ─────────────────────────────── */}
-        <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
           <Link href="/store" className="hover:text-foreground transition-colors">
             Shop
           </Link>
           <Link href="/creators" className="hover:text-foreground transition-colors">
             Creators
           </Link>
-          <Link href="/track" className="hover:text-foreground transition-colors">
-            Track Order
-          </Link>
         </nav>
-
         {/* ── RIGHT: Actions ──────────────────────────────────── */}
         <div className="flex items-center gap-2">
           <Button
@@ -264,14 +259,7 @@ export function Header({ user }: HeaderProps) {
                   <Store className="h-4 w-4 flex-shrink-0" />
                   <span className="flex-1">Creators</span>
                 </Link>
-                <Link
-                  href="/track"
-                  onClick={closeMobileMenu}
-                  className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
-                >
-                  <Truck className="h-4 w-4 flex-shrink-0" />
-                  <span className="flex-1">Track Order</span>
-                </Link>
+                
               </nav>
             </div>
 

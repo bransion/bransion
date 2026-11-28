@@ -263,7 +263,16 @@ export async function adminUpdateBrand(
       .from('brands')
       .update(parsed.data)
       .eq('id', brandId);
-    if (error) throw error;
+    if (error) {
+      if (error.code === '23505') {
+        return {
+          ok: false,
+          error:
+            'This brand name has already been taken. Please choose another name.',
+        };
+      }
+      throw error;
+    }
 
     await admin.from('admin_audit_logs').insert({
       admin_id: userId,

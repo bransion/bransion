@@ -25,7 +25,6 @@ export function Footer() {
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/store" className="hover:text-foreground">Browse</Link></li>
               <li><Link href="/creators" className="hover:text-foreground">Creators</Link></li>
-              <li><Link href="/track" className="hover:text-foreground">Track Order</Link></li>
             </ul>
           </div>
 
@@ -50,6 +49,16 @@ export function Footer() {
                 >
                   WhatsApp us
                 </a>
+              </li>
+              <li>
+                <Link href="/privacy" className="hover:text-foreground">
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link href="/terms" className="hover:text-foreground">
+                  Terms &amp; Conditions
+                </Link>
               </li>
             </ul>
           </div>

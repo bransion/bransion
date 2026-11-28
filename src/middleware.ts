@@ -11,6 +11,8 @@ const TRULY_PUBLIC_PATHS = [
   '/auth/signout',
   '/api/paystack/webhook',
   '/api/cron/maintenance',
+  '/privacy',
+  '/terms',
 ];
 
 const AUTH_ENTRY_PATH = '/sign-in';
