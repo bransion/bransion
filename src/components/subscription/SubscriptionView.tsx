@@ -106,9 +106,15 @@ export function SubscriptionView({ userTier, successMessage, errorMessage, pendi
                   <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
                   <span>Keep 70% of every sale</span>
                 </li>
-                <li className="flex items-start gap-2">
+                                <li className="flex items-start gap-2">
                   <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0 mt-0.5" />
-                  <span>Unlimited product uploads</span>
+                  <span>
+                    {tier === 'basic'
+                      ? '1 product upload total'
+                      : tier === 'standard'
+                        ? 'Up to 3 products per brand'
+                        : 'Unlimited product uploads'}
+                  </span>
                 </li>
               </ul>
 

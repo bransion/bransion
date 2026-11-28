@@ -65,9 +65,12 @@ export function DeleteAccountDialog({ open, onOpenChange, userEmail }: Props) {
       onOpenChange(false);
       router.push('/sign-in');
       router.refresh();
-    } else {
+        } else {
       setDeleting(false);
-      toast.error(res.error);
+      toast.error(res.error, {
+        duration: 10000,
+        description: 'If this persists, email support@bransion.com.',
+      });
     }
   }
 
